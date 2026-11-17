@@ -303,7 +303,7 @@ async function migrate() {
     // Seed Owner if not exists
     await client.query(`
       INSERT INTO mrh_users (uid, email, display_name, role, phone, active)
-      VALUES ('owner_debasish', 'debasish@mobilerepairinghouse.in', 'Debasish (Owner)', 'owner', '+91 97327 89938', TRUE)
+      VALUES ('owner_debasish', 'debasish@mobilerepairinghouse.com', 'Debasish (Owner)', 'owner', '+91 97327 89938', TRUE)
       ON CONFLICT (uid) DO NOTHING;
     `);
 
