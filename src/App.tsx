@@ -63,7 +63,7 @@ export const App: React.FC = () => {
         <SettingsProvider>
           <VoiceProvider>
             <CartProvider>
-              <BrowserRouter>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <VoiceCounterAssistantModal />
                 <Routes>
                 {/* Public Routes with Public Navbar & Footer */}

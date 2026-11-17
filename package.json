@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n \"SERVER,VITE\" -c \"blue.bold,green.bold\" \"node server/index.cjs\" \"vite\"",
+    "dev:client": "vite",
     "server": "node server/index.cjs",
     "db:migrate": "node server/migrate.cjs",
     "db:seed": "node server/seedCustomers.cjs && node server/seedDefaults.cjs && node server/seedInventory.cjs",
@@ -38,6 +39,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.7",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.6.3",
