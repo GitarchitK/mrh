@@ -7,9 +7,9 @@ import { FlipkartCartDrawer } from '../shop/FlipkartCartDrawer';
 
 export const PublicLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-brand-light text-brand-text">
+    <div className="min-h-screen flex flex-col bg-brand-light text-brand-text w-full max-w-full overflow-x-hidden">
       <PublicNavbar />
-      <main className="flex-1 pb-16 md:pb-0">
+      <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
       <PublicFooter />

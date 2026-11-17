@@ -87,7 +87,7 @@ export const FlipkartProductCard: React.FC<FlipkartProductCardProps> = ({
             {product.name}
           </h3>
 
-          {/* Flipkart Rating Badge */}
+          {/* Rating Badge */}
           <div className="flex items-center gap-2">
             <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-700 text-white text-xs font-bold shadow-2xs">
               <span>{product.rating}</span>
@@ -156,7 +156,7 @@ export const FlipkartProductCard: React.FC<FlipkartProductCardProps> = ({
     );
   }
 
-  // Flipkart Grid View Card
+  // Grid View Card
   return (
     <div
       onClick={() => onOpenQuickView(product)}

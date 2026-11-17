@@ -230,7 +230,7 @@ export const FlipkartCartDrawer: React.FC = () => {
                 />
               </div>
 
-              {/* Flipkart-Style Price Details Card */}
+              {/* Order Summary & Price Details Card */}
               <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-2.5 text-xs">
                 <span className="font-extrabold text-[11px] uppercase tracking-wider text-brand-secondary block pb-1 border-b border-brand-border">
                   Price Details ({cartCount} Items)

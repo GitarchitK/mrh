@@ -247,7 +247,7 @@ export const RepairRequestPage: React.FC = () => {
               variants={fadeInUp}
               initial="hidden"
               animate="visible"
-              className="bg-white rounded-3xl p-6 sm:p-10 border border-brand-border/90 shadow-card-hover space-y-8"
+              className="bg-white rounded-3xl p-4 sm:p-8 lg:p-10 border border-brand-border/90 shadow-card-hover space-y-6 sm:space-y-8"
             >
               <div className="text-center space-y-2 border-b border-brand-border/80 pb-6">
                 <span className="text-xs font-bold text-brand-orange uppercase tracking-wider bg-brand-orange-light/80 px-3 py-1 rounded-full">

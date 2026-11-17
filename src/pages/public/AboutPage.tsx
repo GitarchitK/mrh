@@ -56,7 +56,7 @@ export const AboutPage: React.FC = () => {
         {/* Story & Philosophy */}
         <motion.div
           variants={fadeInUp}
-          className="bg-white rounded-3xl p-8 sm:p-12 border border-brand-border shadow-xs space-y-6 text-sm text-brand-text leading-relaxed"
+          className="bg-white rounded-3xl p-5 sm:p-10 lg:p-12 border border-brand-border shadow-xs space-y-6 text-sm text-brand-text leading-relaxed"
         >
           <h2 className="text-xl sm:text-2xl font-bold text-brand-navy">
             Our Commitment to Transparent Repair Care

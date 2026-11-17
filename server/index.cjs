@@ -266,7 +266,7 @@ app.get('/api/health', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  const configuredPassword = process.env.ADMIN_PASSWORD || 'debasish123';
+  const configuredPassword = process.env.ADMIN_PASSWORD || 'Debasish@2026';
 
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required.' });

@@ -74,7 +74,7 @@ export const AndroidRepairPage: React.FC = () => {
         {/* Hero Banner with animated backdrop and glass accents */}
         <motion.div
           variants={fadeInUp}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-navy to-brand-navy-dark text-white p-8 sm:p-12 lg:p-16 shadow-2xl border border-white/10"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-navy to-brand-navy-dark text-white p-5 sm:p-12 lg:p-16 shadow-2xl border border-white/10"
         >
           {/* Subtle decorative glowing background blurs */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/15 rounded-full blur-3xl pointer-events-none" />
@@ -97,9 +97,9 @@ export const AndroidRepairPage: React.FC = () => {
               Whether your screen cracked after a sudden drop, your battery drains too quickly, or your device refuses to charge, get honest diagnostic bench testing at Mobile Repairing House in Dunlop, Kolkata.
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center gap-4">
-              <Link to="/repair-request?type=android">
-                <Button size="lg" variant="glow" rightIcon={<ArrowRight className="w-4 h-4" />}>
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3.5">
+              <Link to="/repair-request?type=android" className="w-full sm:w-auto">
+                <Button size="lg" variant="glow" className="w-full sm:w-auto" rightIcon={<ArrowRight className="w-4 h-4" />}>
                   Book Android Assessment
                 </Button>
               </Link>
@@ -107,11 +107,12 @@ export const AndroidRepairPage: React.FC = () => {
                 href={createWhatsAppUrl('Hello Debasish, I need an assessment for my Android smartphone at your Dunlop shop.')}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-full sm:w-auto"
               >
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
                   leftIcon={<MessageSquare className="w-4 h-4 text-emerald-400" />}
                 >
                   Chat with Debasish

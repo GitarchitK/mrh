@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { pool } = require('./db.cjs');
 
 async function migrate() {
@@ -301,11 +302,14 @@ async function migrate() {
     `);
 
     // Seed Owner if not exists
+    const ownerHash = crypto.createHash('sha256').update('Debasish@2026').digest('hex');
     await client.query(`
-      INSERT INTO mrh_users (uid, email, display_name, role, phone, active)
-      VALUES ('owner_debasish', 'debasish@mobilerepairinghouse.com', 'Debasish (Owner)', 'owner', '+91 97327 89938', TRUE)
-      ON CONFLICT (uid) DO NOTHING;
-    `);
+      INSERT INTO mrh_users (uid, email, display_name, role, phone, active, password_hash)
+      VALUES ('owner_debasish', 'debasish@mobilerepairinghouse.com', 'Debasish (Owner)', 'owner', '+91 97327 89938', TRUE, $1)
+      ON CONFLICT (uid) DO UPDATE
+      SET email = EXCLUDED.email,
+          password_hash = EXCLUDED.password_hash;
+    `, [ownerHash]);
 
     await client.query('COMMIT');
     console.log('Migration completed successfully!');

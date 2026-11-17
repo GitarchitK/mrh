@@ -97,11 +97,11 @@ export const ServiceDetailPage: React.FC = () => {
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Main Content Column (8 cols) */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-8 space-y-6 sm:space-y-8">
             {/* Header Card */}
             <motion.div
               variants={fadeInUp}
-              className="bg-white p-6 sm:p-8 rounded-3xl border border-brand-border shadow-xs"
+              className="bg-white p-5 sm:p-8 rounded-3xl border border-brand-border shadow-xs"
             >
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-[11px] font-bold text-brand-orange uppercase tracking-wider bg-brand-orange-light/10 px-2.5 py-1 rounded-full border border-brand-orange/30">

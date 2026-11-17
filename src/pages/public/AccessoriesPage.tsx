@@ -61,21 +61,21 @@ export const AccessoriesPage: React.FC = () => {
             </div>
             <div>
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider mb-1">
-                New Online Store
+                Online Store
               </div>
               <h3 className="text-base sm:text-lg font-bold leading-tight">
-                Looking for our Flipkart-Style Store with Online Ordering?
+                Browse Our Complete Mobile Accessories Store
               </h3>
               <p className="text-xs text-blue-100 mt-0.5">
-                Browse 20+ fast chargers, boAt earphones, display screens & repair tools with category filters and instant WhatsApp checkout.
+                Browse fast chargers, boAt earphones, display screens & repair tools with category filters and instant WhatsApp checkout.
               </p>
             </div>
           </div>
           <Link
             to="/shop"
-            className="shrink-0 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            className="shrink-0 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
           >
-            <span>Visit Flipkart-Style Store</span>
+            <span>Visit Online Store</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </motion.div>
@@ -97,7 +97,7 @@ export const AccessoriesPage: React.FC = () => {
         {/* Real In-Shop Counter Display Banner */}
         <motion.div
           variants={fadeInUp}
-          className="rounded-3xl overflow-hidden bg-white border border-brand-border shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6"
+          className="rounded-3xl overflow-hidden bg-white border border-brand-border shadow-xs p-4 sm:p-8 flex flex-col md:flex-row items-center gap-6"
         >
           <div className="w-full md:w-56 h-44 rounded-2xl overflow-hidden shrink-0 relative border border-brand-border">
             <img

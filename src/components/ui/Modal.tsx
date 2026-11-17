@@ -59,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({
             onClick={onClose}
           />
 
-          <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
             {/* Animated Modal Dialog */}
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -67,15 +67,15 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ opacity: 0, scale: 0.94, y: 16 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className={cn(
-                'relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full border border-brand-border',
+                'relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full border border-brand-border max-h-[calc(100vh-2rem)] flex flex-col',
                 maxWidths[maxWidth]
               )}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-6 py-5 border-b border-brand-border/70 flex items-center justify-between bg-gradient-to-r from-brand-light/80 to-white">
+              <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-brand-border/70 flex items-center justify-between bg-gradient-to-r from-brand-light/80 to-white shrink-0">
                 <div>
-                  <h3 className="text-lg font-bold text-brand-navy">{title}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-brand-navy">{title}</h3>
                   {description && <p className="text-xs text-brand-secondary mt-0.5">{description}</p>}
                 </div>
                 <button
@@ -87,7 +87,7 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
 
               {/* Body */}
-              <div className="p-6 sm:p-7">{children}</div>
+              <div className="p-5 sm:p-7 overflow-y-auto flex-1">{children}</div>
             </motion.div>
           </div>
         </div>

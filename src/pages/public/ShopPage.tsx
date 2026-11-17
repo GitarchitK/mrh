@@ -340,7 +340,7 @@ export const ShopPage: React.FC = () => {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
       />
 
-      {/* 1. Flipkart-style Header Ticker & Deals Banner */}
+      {/* 1. Header Ticker & Deals Banner */}
       <div className="bg-[#18264B] text-white py-2 px-4 border-b border-white/10 text-xs shadow-inner">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export const ShopPage: React.FC = () => {
       </div>
 
       {/* 2. Category Icon Horizontal Navigation Carousel */}
-      <div className="bg-white border-b border-slate-200 shadow-2xs sticky top-20 z-30">
+      <div className="bg-white border-b border-slate-200 shadow-2xs sticky top-16 sm:top-20 z-30">
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex items-center justify-between overflow-x-auto no-scrollbar py-2.5 sm:py-3 gap-2 sm:gap-6">
             {STORE_CATEGORIES.map((cat) => {
@@ -416,7 +416,7 @@ export const ShopPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* 3. Flipkart Promotional Banner Carousel */}
+        {/* 3. Promotional Banner Carousel */}
         <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md">
           <AnimatePresence mode="wait">
             <motion.div
@@ -548,7 +548,7 @@ export const ShopPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Flipkart-Style Sorting Bar (Desktop Tabs) */}
+          {/* Sorting Bar (Desktop Tabs) */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs overflow-x-auto no-scrollbar gap-2">
             <div className="flex items-center gap-1 shrink-0">
               <span className="font-bold text-slate-700 uppercase tracking-wide text-[10px] mr-1.5">
@@ -865,7 +865,7 @@ export const ShopPage: React.FC = () => {
               </div>
             )}
 
-            {/* Trust Features Bar (Flipkart style) */}
+            {/* Trust Features Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6">
               <div className="bg-white rounded-xl p-3 border border-slate-200 text-center space-y-1 shadow-2xs">
                 <div className="w-8 h-8 rounded-full bg-blue-50 text-[#2874f0] flex items-center justify-center mx-auto">
@@ -1090,7 +1090,7 @@ export const ShopPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 7. Flipkart Product Quick View Modal */}
+      {/* 7. Product Quick View Modal */}
       <FlipkartProductModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}

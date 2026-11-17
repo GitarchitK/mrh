@@ -145,7 +145,7 @@ export const ContactPage: React.FC = () => {
         {/* Map & Directions Section */}
         <motion.div
           variants={fadeInUp}
-          className="bg-white rounded-3xl p-6 sm:p-8 border border-brand-border shadow-xs space-y-6"
+          className="bg-white rounded-3xl p-4 sm:p-8 border border-brand-border shadow-xs space-y-6"
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -160,8 +160,9 @@ export const ContactPage: React.FC = () => {
               href={settings.googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
+              className="w-full sm:w-auto"
             >
-              <Button size="sm" variant="primary" leftIcon={<ExternalLink className="w-4 h-4" />}>
+              <Button size="sm" variant="primary" className="w-full sm:w-auto" leftIcon={<ExternalLink className="w-4 h-4" />}>
                 Open Google Maps Directions
               </Button>
             </a>

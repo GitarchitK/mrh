@@ -61,7 +61,7 @@ export const FlipkartProductModal: React.FC<FlipkartProductModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-brand-navy/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-3xl shadow-2xl border border-brand-border w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
         {/* Header Bar */}
-        <div className="px-6 py-3.5 bg-brand-light border-b border-brand-border flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3 sm:py-3.5 bg-brand-light border-b border-brand-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-brand-secondary bg-white px-2.5 py-1 rounded-full border border-brand-border">
               {product.categoryLabel}
@@ -93,14 +93,14 @@ export const FlipkartProductModal: React.FC<FlipkartProductModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
           {/* Left Column: Product Showcase Photo & CTA */}
-          <div className="md:col-span-5 space-y-5">
-            <div className="aspect-square rounded-3xl bg-brand-light/50 border border-brand-border/80 p-8 flex items-center justify-center relative overflow-hidden group">
+          <div className="md:col-span-5 space-y-4 sm:space-y-5">
+            <div className="aspect-square rounded-2xl sm:rounded-3xl bg-brand-light/50 border border-brand-border/80 p-4 sm:p-8 flex items-center justify-center relative overflow-hidden group">
               <img
                 src="/images/logo-transparent.webp"
                 alt={product.name}
-                className="w-48 h-48 object-contain drop-shadow-md group-hover:scale-105 transition-transform"
+                className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-md group-hover:scale-105 transition-transform"
               />
               {discountPercent > 0 && (
                 <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-black uppercase tracking-wider shadow-sm">
@@ -110,7 +110,7 @@ export const FlipkartProductModal: React.FC<FlipkartProductModalProps> = ({
             </div>
 
             {/* Quick Actions Buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <Button
                 variant="outline"
                 size="md"

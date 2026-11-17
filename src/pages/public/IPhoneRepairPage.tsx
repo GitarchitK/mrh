@@ -75,7 +75,7 @@ export const IPhoneRepairPage: React.FC = () => {
         {/* Hero Banner with Dark Navy Mesh Backdrop */}
         <motion.div
           variants={fadeInUp}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy-dark via-brand-navy to-brand-navy text-white p-8 sm:p-12 lg:p-16 shadow-2xl border border-white/10"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy-dark via-brand-navy to-brand-navy text-white p-5 sm:p-12 lg:p-16 shadow-2xl border border-white/10"
         >
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -97,9 +97,9 @@ export const IPhoneRepairPage: React.FC = () => {
               When your iPhone experiences a shattered display, reduced battery longevity, or charging failure, get a careful diagnostic assessment at Mobile Repairing House in Dunlop, Kolkata.
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center gap-4">
-              <Link to="/repair-request?type=iphone">
-                <Button size="lg" variant="glow" rightIcon={<ArrowRight className="w-4 h-4" />}>
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3.5">
+              <Link to="/repair-request?type=iphone" className="w-full sm:w-auto">
+                <Button size="lg" variant="glow" className="w-full sm:w-auto" rightIcon={<ArrowRight className="w-4 h-4" />}>
                   Request iPhone Assessment
                 </Button>
               </Link>
@@ -107,11 +107,12 @@ export const IPhoneRepairPage: React.FC = () => {
                 href={createWhatsAppUrl('Hello Debasish, I need an assessment for my iPhone at your Dunlop shop.')}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-full sm:w-auto"
               >
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
                   leftIcon={<MessageSquare className="w-4 h-4 text-emerald-400" />}
                 >
                   Chat with Debasish

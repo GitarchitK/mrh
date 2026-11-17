@@ -101,7 +101,7 @@ export const RepairStatusPage: React.FC = () => {
         {/* Search Card */}
         <motion.div
           variants={fadeInUp}
-          className="bg-white rounded-3xl p-6 sm:p-8 border border-brand-border shadow-xs"
+          className="bg-white rounded-3xl p-4 sm:p-8 border border-brand-border shadow-xs"
         >
           <form onSubmit={handleSearch} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -145,7 +145,7 @@ export const RepairStatusPage: React.FC = () => {
               exit="exit"
             >
               {trackingResult && trackingResult.valid ? (
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-brand-border shadow-md space-y-6">
+                <div className="bg-white rounded-3xl p-4 sm:p-8 border border-brand-border shadow-md space-y-6">
                   {/* Result Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-brand-border gap-3">
                     <div>
@@ -162,7 +162,7 @@ export const RepairStatusPage: React.FC = () => {
                   </div>
 
                   {/* Device & Timestamps Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-brand-light p-5 rounded-2xl border border-brand-border text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-brand-light p-3.5 sm:p-5 rounded-2xl border border-brand-border text-xs">
                     <div>
                       <span className="text-brand-secondary block">Device Details:</span>
                       <span className="font-bold text-brand-navy text-sm">

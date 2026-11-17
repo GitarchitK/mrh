@@ -73,7 +73,7 @@ export const InteractiveRepairCalculator: React.FC = () => {
   const prefilledWhatsApp = `Hello Debasish, I need an assessment for my ${deviceType === 'iphone' ? 'iPhone' : selectedBrand} regarding ${selectedIssue.name} at your Dunlop shop.`;
 
   return (
-    <div className="w-full glass-card rounded-3xl p-6 sm:p-8 shadow-card-hover border border-brand-border/90 relative overflow-hidden">
+    <div className="w-full glass-card rounded-3xl p-4 sm:p-6 lg:p-8 shadow-card-hover border border-brand-border/90 relative overflow-hidden">
       {/* Decorative ambient gradient backdrop */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-navy/5 rounded-full blur-3xl pointer-events-none" />
@@ -94,20 +94,20 @@ export const InteractiveRepairCalculator: React.FC = () => {
         </div>
 
         {/* Device Toggle Tabs */}
-        <div className="flex p-1 rounded-2xl bg-brand-light border border-brand-border/80 self-start sm:self-center shrink-0">
+        <div className="grid grid-cols-2 sm:flex p-1 rounded-2xl bg-brand-light border border-brand-border/80 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={() => {
               setDeviceType('android');
               setSelectedBrand('Samsung');
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
               deviceType === 'android'
                 ? 'bg-brand-navy text-white shadow-md'
                 : 'text-brand-secondary hover:text-brand-navy'
             }`}
           >
-            <Smartphone className="w-4 h-4" />
+            <Smartphone className="w-4 h-4 shrink-0" />
             <span>Android Phone</span>
           </button>
           <button
@@ -116,13 +116,13 @@ export const InteractiveRepairCalculator: React.FC = () => {
               setDeviceType('iphone');
               setSelectedBrand('iPhone 13 / 12');
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
               deviceType === 'iphone'
                 ? 'bg-brand-navy text-white shadow-md'
                 : 'text-brand-secondary hover:text-brand-navy'
             }`}
           >
-            <Apple className="w-4 h-4" />
+            <Apple className="w-4 h-4 shrink-0" />
             <span>iPhone (iOS)</span>
           </button>
         </div>
@@ -222,11 +222,12 @@ export const InteractiveRepairCalculator: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 pt-2 md:pt-0">
+            <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 pt-2 md:pt-0 w-full md:w-auto">
               <a
                 href={createWhatsAppUrl(prefilledWhatsApp)}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="w-full"
               >
                 <Button size="md" variant="glow" className="w-full text-xs" leftIcon={<MessageSquare className="w-3.5 h-3.5 text-white" />}>
                   Check Parts on WhatsApp
@@ -235,6 +236,7 @@ export const InteractiveRepairCalculator: React.FC = () => {
 
               <Link
                 to={`/repair-request?type=${deviceType}&category=${encodeURIComponent(selectedIssue.category)}&brand=${encodeURIComponent(selectedBrand)}`}
+                className="w-full"
               >
                 <Button
                   size="md"

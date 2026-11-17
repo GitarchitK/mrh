@@ -119,33 +119,33 @@ export const HomePage: React.FC = () => {
       />
 
       {/* 5.3 HERO SECTION WITH MODERN ANIMATIONS & FLOATING BADGES */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-navy-dark via-brand-navy to-brand-navy text-white pt-16 pb-24 sm:pt-20 sm:pb-32 border-b border-brand-navy-light/40">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-navy-dark via-brand-navy to-brand-navy text-white pt-8 pb-16 sm:pt-16 sm:pb-28 border-b border-brand-navy-light/40">
         {/* Subtle grid and decorative lighting mesh */}
         <div className="absolute inset-0 bg-grid-pattern-dark opacity-30 pointer-events-none" />
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-orange/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute top-1/2 -right-32 w-96 h-96 bg-[#3B82F6]/15 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             {/* Left Column: Animated Headline, Badges & CTAs */}
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-7 space-y-6 text-center lg:text-left"
+              className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left"
             >
               {/* Location Badge & Official Shop Slogan */}
-              <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card-dark text-white text-xs font-semibold shadow-xs">
-                  <span className="flex h-2 w-2 relative">
+              <motion.div variants={fadeInUp} className="flex flex-wrap items-center justify-center lg:justify-start gap-2 max-w-full">
+                <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full glass-card-dark text-white text-[11px] sm:text-xs font-semibold shadow-xs max-w-full">
+                  <span className="flex h-2 w-2 relative shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-orange" />
                   </span>
                   <MapPin className="w-3.5 h-3.5 text-brand-orange shrink-0" />
-                  <span>Bhajan Complex, Dunlop &bull; Debasish</span>
+                  <span className="truncate">Bhajan Complex, Dunlop &bull; Debasish</span>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-brand-orange/20 to-amber-500/20 border border-brand-orange/40 text-brand-orange-light text-[11px] font-black uppercase tracking-wider shadow-glow-orange">
-                  <Sparkles className="w-3 h-3 text-amber-300" />
+                <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-2xl sm:rounded-full bg-gradient-to-r from-brand-orange/20 to-amber-500/20 border border-brand-orange/40 text-brand-orange-light text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-glow-orange max-w-full text-center leading-snug">
+                  <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
                   <span>&ldquo;The Mobile Display Is Gone But We&rsquo;ll Make It On&rdquo;</span>
                 </div>
               </motion.div>
@@ -162,7 +162,7 @@ export const HomePage: React.FC = () => {
               {/* Supporting Copy */}
               <motion.p
                 variants={fadeInUp}
-                className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal"
+                className="text-sm sm:text-lg text-white/80 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal"
               >
                 From cracked displays to motherboard short circuits, receive honest bench testing and transparent repair estimates before any work starts.
               </motion.p>
@@ -171,45 +171,45 @@ export const HomePage: React.FC = () => {
               <motion.div
                 variants={fadeInUp}
                 onClick={() => setShowSatisfactionModal(true)}
-                className="cursor-pointer inline-flex items-center gap-3.5 p-2.5 pr-4 rounded-2xl glass-card-dark border border-white/20 hover:border-brand-orange/60 hover:bg-white/10 transition-all shadow-lg group select-none text-left"
+                className="cursor-pointer w-full sm:w-auto max-w-lg inline-flex items-center gap-3 p-2.5 sm:pr-4 rounded-2xl glass-card-dark border border-white/20 hover:border-brand-orange/60 hover:bg-white/10 transition-all shadow-lg group select-none text-left"
               >
                 {/* Stacked Customer Avatars */}
                 <div className="flex -space-x-2 shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white text-[10px] sm:text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
                     D
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-[10px] sm:text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
                     S
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white text-[10px] sm:text-[11px] font-black ring-2 ring-brand-navy shadow-sm">
                     A
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-brand-orange flex items-center justify-center text-white text-xs font-black ring-2 ring-brand-navy shadow-sm">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand-orange flex items-center justify-center text-white text-xs font-black ring-2 ring-brand-navy shadow-sm">
                     ★
                   </div>
                 </div>
 
                 {/* Stars & Text */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex text-amber-400">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex text-amber-400 shrink-0">
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <span className="text-xs font-black text-white tracking-wide">
+                    <span className="text-[11px] sm:text-xs font-black text-white tracking-wide">
                       100% Customer Satisfaction Priority
                     </span>
                   </div>
-                  <div className="text-[11px] text-white/75 flex items-center gap-1 group-hover:text-brand-orange-light transition-colors mt-0.5">
-                    <span>Inspect device at counter before paying &bull; Zero surprise fees</span>
+                  <div className="text-[10px] sm:text-[11px] text-white/75 flex items-center gap-1 group-hover:text-brand-orange-light transition-colors mt-0.5 leading-snug">
+                    <span className="line-clamp-2 sm:line-clamp-none">Inspect device at counter before paying &bull; Zero surprise fees</span>
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform shrink-0" />
                   </div>
                 </div>
               </motion.div>
 
               {/* Action Buttons */}
-              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2 w-full">
                 <Link to="/repair-request" className="w-full sm:w-auto">
                   <Button size="lg" variant="glow" className="w-full sm:w-auto text-sm sm:text-base" rightIcon={<ArrowRight className="w-4 h-4" />}>
                     Request a Repair
@@ -224,7 +224,7 @@ export const HomePage: React.FC = () => {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-white/25 backdrop-blur-md"
+                    className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-white/25 backdrop-blur-md text-sm sm:text-base"
                     leftIcon={<MessageSquare className="w-4 h-4 text-emerald-400" />}
                   >
                     Chat on WhatsApp
@@ -233,7 +233,7 @@ export const HomePage: React.FC = () => {
               </motion.div>
 
               {/* Compact Benefits */}
-              <motion.div variants={fadeInUp} className="pt-6 border-t border-white/15 grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-left">
+              <motion.div variants={fadeInUp} className="pt-5 border-t border-white/15 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 rounded-full bg-brand-orange/20 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-3.5 h-3.5 text-brand-orange" />
@@ -298,11 +298,11 @@ export const HomePage: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="w-full max-w-md glass-card-dark rounded-3xl p-5 sm:p-6 shadow-2xl border border-white/20 relative"
+                className="w-full max-w-md glass-card-dark rounded-3xl p-4 sm:p-6 shadow-2xl border border-white/20 relative"
               >
                 {/* Photo Switcher Navigation */}
                 <div className="flex items-center justify-between pb-3.5 border-b border-white/10 gap-1.5">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 sm:gap-1.5">
                     {[
                       { id: 'storefront', label: 'Storefront', icon: MapPin },
                       { id: 'bench', label: 'Bench', icon: Wrench },
@@ -315,7 +315,7 @@ export const HomePage: React.FC = () => {
                           key={tab.id}
                           type="button"
                           onClick={() => setHeroPhotoTab(tab.id as any)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                          className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-brand-orange text-white shadow-glow-orange'
                               : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
@@ -881,16 +881,16 @@ export const HomePage: React.FC = () => {
 
             {/* Official Slogan Banner Ribbon */}
             <div className="pt-2">
-              <div className="inline-block p-4 sm:px-8 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
-                <p className="text-xs sm:text-sm font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-brand-orange-light to-orange-400 uppercase">
+              <div className="inline-block p-3.5 sm:px-8 rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl max-w-full">
+                <p className="text-[11px] sm:text-sm font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-brand-orange-light to-orange-400 uppercase leading-snug">
                   &ldquo;THE MOBILE DISPLAY IS GONE BUT WE&rsquo;LL MAKE IT ON&rdquo;
                 </p>
-                <p className="text-[11px] text-white/80 font-semibold mt-1">
+                <p className="text-[10px] sm:text-[11px] text-white/80 font-semibold mt-1">
                   We Fix It All &bull; Screen &amp; Parts Replacement &bull; Motherboard Repair Experts
                 </p>
-                <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-white/60">
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] text-white/60">
                   <span>Debasish: +91 97327 89938</span>
-                  <span>&bull;</span>
+                  <span className="hidden sm:inline">&bull;</span>
                   <span>139 B.T. Road, Dunlop, Kolkata 700108</span>
                 </div>
               </div>
@@ -898,7 +898,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Bento Gallery Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
             {/* Card 1 (Large 8 cols): Storefront Street View */}
             <motion.div
               whileHover={{ y: -4 }}
@@ -910,7 +910,7 @@ export const HomePage: React.FC = () => {
                   tag: 'Storefront',
                 })
               }
-              className="md:col-span-8 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[320px] sm:min-h-[400px] flex flex-col justify-end p-6"
+              className="md:col-span-8 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[260px] sm:min-h-[400px] flex flex-col justify-end p-4 sm:p-6"
             >
               <img
                 src="/images/store/storefront-day.webp"
@@ -952,7 +952,7 @@ export const HomePage: React.FC = () => {
                   tag: 'Hardware Lab',
                 })
               }
-              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[320px] sm:min-h-[400px] flex flex-col justify-end p-6"
+              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[240px] sm:min-h-[400px] flex flex-col justify-end p-4 sm:p-6"
             >
               <img
                 src="/images/store/workshop-bench.webp"
@@ -989,7 +989,7 @@ export const HomePage: React.FC = () => {
                   tag: 'Accessories',
                 })
               }
-              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[280px] flex flex-col justify-end p-6"
+              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[220px] sm:min-h-[280px] flex flex-col justify-end p-4 sm:p-6"
             >
               <img
                 src="/images/store/accessories-display.webp"
@@ -1022,7 +1022,7 @@ export const HomePage: React.FC = () => {
                   tag: 'Brand Wordmark',
                 })
               }
-              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[280px] flex flex-col justify-end p-6"
+              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[220px] sm:min-h-[280px] flex flex-col justify-end p-4 sm:p-6"
             >
               <img
                 src="/images/store/storefront-banner.webp"
@@ -1055,7 +1055,7 @@ export const HomePage: React.FC = () => {
                   tag: 'Personal Service',
                 })
               }
-              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[280px] flex flex-col justify-end p-6"
+              className="md:col-span-4 rounded-3xl overflow-hidden relative group bg-brand-navy-dark border border-white/15 shadow-xl cursor-pointer min-h-[220px] sm:min-h-[280px] flex flex-col justify-end p-4 sm:p-6"
             >
               <img
                 src="/images/store/storefront-entrance.webp"

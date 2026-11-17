@@ -8,7 +8,7 @@ export const PublicFooter: React.FC = () => {
   const { settings, enabledServices } = useSettings();
 
   return (
-    <footer className="bg-brand-navy text-white pt-16 pb-24 md:pb-12 border-t border-brand-navy-dark">
+    <footer className="bg-brand-navy text-white pt-16 pb-32 md:pb-12 border-t border-brand-navy-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 mb-12">
           {/* Col 1: Brand & Identity */}
@@ -73,9 +73,8 @@ export const PublicFooter: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm text-white/80">
               <li>
-                <Link to="/shop" className="hover:text-white transition-colors flex items-center gap-1.5 text-amber-300 font-bold">
-                  <span>Online Store (Flipkart UI)</span>
-                  <span className="text-[10px] bg-brand-orange text-white px-1.5 py-0.2 rounded-full uppercase">Hot</span>
+                <Link to="/shop" className="hover:text-white transition-colors flex items-center gap-1.5 text-white font-medium">
+                  <span>Online Store & Accessories</span>
                 </Link>
               </li>
               <li>
