@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Core Hub Pages -->
   <url>
     <loc>https://mobilerepairinghouse.in/</loc>
     <changefreq>weekly</changefreq>
@@ -11,14 +12,19 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://mobilerepairinghouse.in/iphone-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://mobilerepairinghouse.in/android-repair</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://mobilerepairinghouse.in/iphone-repair</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://mobilerepairinghouse.in/shop</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://mobilerepairinghouse.in/accessories</loc>
@@ -28,7 +34,7 @@
   <url>
     <loc>https://mobilerepairinghouse.in/repair-request</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://mobilerepairinghouse.in/repair-status</loc>
@@ -36,15 +42,101 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mobilerepairinghouse.in/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://mobilerepairinghouse.in/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- High-Intent Dedicated Repair Services -->
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/display-touchscreen-replacement</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/battery-replacement</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/charging-port-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/motherboard-diagnostics-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/camera-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/speaker-microphone-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/water-damage-assessment</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/back-glass-repair</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/network-connectivity-troubleshooting</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/services/software-troubleshooting</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Shop Category Collections -->
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/chargers</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/cables</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/earphones</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/protection</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/power_banks</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mobilerepairinghouse.in/shop/spares</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Legal & Policies -->
   <url>
     <loc>https://mobilerepairinghouse.in/privacy-policy</loc>
     <changefreq>yearly</changefreq>
