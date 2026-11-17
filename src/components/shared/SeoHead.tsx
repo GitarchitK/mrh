@@ -27,6 +27,25 @@ export const SeoHead: React.FC<SeoHeadProps> = ({
     }
     metaDesc.setAttribute('content', description);
 
+    // 2b. Update Canonical and Open Graph URL
+    const domain = 'https://mobilerepairinghouse.com';
+    const fullCanonical = canonicalPath ? `${domain}${canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`}` : `${domain}/`;
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.setAttribute('href', fullCanonical);
+
+    let ogUrl = document.querySelector('meta[property="og:url"]');
+    if (!ogUrl) {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrl);
+    }
+    ogUrl.setAttribute('content', fullCanonical);
+
     // 3. Inject Structured Data JSON-LD
     const scriptId = 'local-seo-jsonld';
     let scriptEl = document.getElementById(scriptId) as HTMLScriptElement | null;

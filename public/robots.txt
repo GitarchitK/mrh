@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /estimate-approval/
 
-Sitemap: https://mobilerepairinghouse.in/sitemap.xml
+Sitemap: https://mobilerepairinghouse.com/sitemap.xml

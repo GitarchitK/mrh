@@ -340,7 +340,7 @@ app.get('/api/auth/me', async (req, res) => {
     }
     res.json({
       uid: 'owner_debasish',
-      email: 'debasish@mobilerepairinghouse.in',
+      email: 'debasish@mobilerepairinghouse.com',
       displayName: 'Debasish (Owner)',
       role: 'owner',
       phone: '+91 97327 89938',

@@ -124,7 +124,7 @@ export const IntakeSheetPrint: React.FC<IntakeSheetPrintProps> = ({ job, setting
         <div className="bg-gray-100 p-3.5 rounded border border-gray-300 mb-6 flex justify-between items-center text-xs">
           <div>
             <span className="font-bold text-gray-900">Track Your Repair Online: </span>
-            <span className="text-gray-700">Visit mobilerepairinghouse.in/repair-status</span>
+            <span className="text-gray-700">Visit mobilerepairinghouse.com/repair-status</span>
           </div>
           <div className="font-mono font-bold bg-white px-2.5 py-1 rounded border border-gray-300">
             Job #{job.jobNumber}

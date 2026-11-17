@@ -43,7 +43,7 @@ export const AdminLoginPage: React.FC = () => {
   const handleQuickDemoLogin = async () => {
     setLoading(true);
     setError('');
-    const res = await login('debasish@mobilerepairinghouse.in', 'debasish123');
+    const res = await login('debasish@mobilerepairinghouse.com', 'debasish123');
     setLoading(false);
     if (res.success) {
       navigate('/admin');
@@ -91,7 +91,7 @@ export const AdminLoginPage: React.FC = () => {
               label="Staff Email Address"
               type="email"
               required
-              placeholder="e.g. debasish@mobilerepairinghouse.in"
+              placeholder="e.g. debasish@mobilerepairinghouse.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />

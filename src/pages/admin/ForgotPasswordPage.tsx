@@ -83,7 +83,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 label="Staff Email Address"
                 type="email"
                 required
-                placeholder="name@mobilerepairinghouse.in"
+                placeholder="name@mobilerepairinghouse.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

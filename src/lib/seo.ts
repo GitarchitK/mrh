@@ -35,16 +35,16 @@ export function getLocalBusinessSchema() {
   return {
     "@context": "https://schema.org",
     "@type": ["MobilePhoneRepairShop", "ElectronicsRepairShop", "LocalBusiness"],
-    "@id": "https://mobilerepairinghouse.in/#store",
+    "@id": "https://mobilerepairinghouse.com/#store",
     "name": BUSINESS_INFO.name,
     "alternateName": BUSINESS_INFO.alternateNames,
     "image": [
-      "https://mobilerepairinghouse.in/images/store/storefront-day.webp",
-      "https://mobilerepairinghouse.in/images/store/workshop-bench.webp",
-      "https://mobilerepairinghouse.in/images/logo.webp"
+      "https://mobilerepairinghouse.com/images/store/storefront-day.webp",
+      "https://mobilerepairinghouse.com/images/store/workshop-bench.webp",
+      "https://mobilerepairinghouse.com/images/logo.webp"
     ],
     "telephone": BUSINESS_INFO.cleanPhone,
-    "url": "https://mobilerepairinghouse.in",
+    "url": "https://mobilerepairinghouse.com",
     "hasMap": BUSINESS_INFO.googleMapsUrl,
     "priceRange": BUSINESS_INFO.priceRange,
     "address": {

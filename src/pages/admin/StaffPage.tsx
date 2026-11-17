@@ -22,7 +22,7 @@ export const StaffPage: React.FC = () => {
   const [staffList, setStaffList] = useState<StaffUser[]>([
     {
       uid: 'owner_debasish',
-      email: 'debasish@mobilerepairinghouse.in',
+      email: 'debasish@mobilerepairinghouse.com',
       displayName: 'Debasish',
       role: 'owner',
       phone: '+91 97327 89938',
@@ -31,7 +31,7 @@ export const StaffPage: React.FC = () => {
     },
     {
       uid: 'tech_counter',
-      email: 'technician@mobilerepairinghouse.in',
+      email: 'technician@mobilerepairinghouse.com',
       displayName: 'Workshop Technician',
       role: 'technician',
       phone: '+91 97327 89938',
@@ -195,7 +195,7 @@ export const StaffPage: React.FC = () => {
             label="Login Email Address *"
             type="email"
             required
-            placeholder="name@mobilerepairinghouse.in"
+            placeholder="name@mobilerepairinghouse.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
