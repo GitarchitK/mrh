@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /estimate-approval/
+
+Sitemap: https://mobilerepairinghouse.in/sitemap.xml

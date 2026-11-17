@@ -1,0 +1,325 @@
+const { pool } = require('./db.cjs');
+
+async function migrate() {
+  const client = await pool.connect();
+  try {
+    console.log('Beginning database migration for Mobile Repairing House...');
+
+    await client.query('BEGIN');
+
+    // 1. Settings Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_settings (
+        id VARCHAR PRIMARY KEY DEFAULT 'main',
+        data JSONB NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 2. Customers Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_customers (
+        id VARCHAR PRIMARY KEY,
+        ledger_code VARCHAR UNIQUE,
+        full_name VARCHAR NOT NULL,
+        phone VARCHAR NOT NULL,
+        normalized_phone VARCHAR NOT NULL,
+        secondary_phone VARCHAR,
+        email VARCHAR,
+        address TEXT,
+        notes TEXT,
+        tags TEXT,
+        status VARCHAR DEFAULT 'Active',
+        opening_balance NUMERIC(12,2) DEFAULT 0.00,
+        outstanding_balance NUMERIC(12,2) DEFAULT 0.00,
+        loyalty_points INT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        created_by VARCHAR
+      );
+      CREATE INDEX IF NOT EXISTS idx_mrh_customers_phone ON mrh_customers(normalized_phone);
+      CREATE INDEX IF NOT EXISTS idx_mrh_customers_ledger_code ON mrh_customers(ledger_code);
+    `);
+
+    // 3. Repairs Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_repairs (
+        id VARCHAR PRIMARY KEY,
+        job_number VARCHAR UNIQUE NOT NULL,
+        customer_id VARCHAR REFERENCES mrh_customers(id) ON DELETE SET NULL,
+        customer_name VARCHAR NOT NULL,
+        customer_phone VARCHAR NOT NULL,
+        customer_email VARCHAR,
+        device_type VARCHAR NOT NULL,
+        brand VARCHAR NOT NULL,
+        model VARCHAR NOT NULL,
+        imei_or_serial VARCHAR,
+        reported_problem TEXT NOT NULL,
+        diagnosis TEXT,
+        inspection_notes TEXT,
+        condition_at_intake TEXT,
+        accessories_received TEXT,
+        device_passcode_or_pattern TEXT,
+        status VARCHAR NOT NULL DEFAULT 'received',
+        priority VARCHAR NOT NULL DEFAULT 'normal',
+        assigned_technician_id VARCHAR,
+        assigned_technician_name VARCHAR,
+        received_at TIMESTAMPTZ DEFAULT NOW(),
+        expected_completion_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
+        estimate_id VARCHAR,
+        invoice_id VARCHAR,
+        warranty_id VARCHAR,
+        internal_notes TEXT,
+        tracking_token VARCHAR UNIQUE NOT NULL,
+        approval_status VARCHAR,
+        approval_timestamp TIMESTAMPTZ,
+        approval_method VARCHAR,
+        approval_recorded_by VARCHAR,
+        created_by VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_mrh_repairs_job_number ON mrh_repairs(job_number);
+      CREATE INDEX IF NOT EXISTS idx_mrh_repairs_tracking_token ON mrh_repairs(tracking_token);
+      CREATE INDEX IF NOT EXISTS idx_mrh_repairs_status ON mrh_repairs(status);
+    `);
+
+    // 4. Repair Events (Timeline)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_repair_events (
+        id VARCHAR PRIMARY KEY,
+        repair_job_id VARCHAR REFERENCES mrh_repairs(id) ON DELETE CASCADE,
+        status VARCHAR NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT NOW(),
+        actor_id VARCHAR,
+        actor_name VARCHAR,
+        note TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_mrh_repair_events_job ON mrh_repair_events(repair_job_id);
+    `);
+
+    // 5. Estimates Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_estimates (
+        id VARCHAR PRIMARY KEY,
+        estimate_number VARCHAR UNIQUE NOT NULL,
+        repair_job_id VARCHAR,
+        job_number VARCHAR,
+        customer_id VARCHAR,
+        customer_name VARCHAR,
+        customer_phone VARCHAR,
+        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        subtotal_paise BIGINT NOT NULL DEFAULT 0,
+        discount_paise BIGINT NOT NULL DEFAULT 0,
+        tax_paise BIGINT NOT NULL DEFAULT 0,
+        total_paise BIGINT NOT NULL DEFAULT 0,
+        status VARCHAR NOT NULL DEFAULT 'draft',
+        revision INT NOT NULL DEFAULT 1,
+        approval_token VARCHAR UNIQUE NOT NULL,
+        notes TEXT,
+        issued_at TIMESTAMPTZ,
+        approved_at TIMESTAMPTZ,
+        rejected_at TIMESTAMPTZ,
+        rejection_reason TEXT,
+        approval_method VARCHAR,
+        approval_recorded_by VARCHAR,
+        valid_until_days INT DEFAULT 7,
+        created_by VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 6. Invoices Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_invoices (
+        id VARCHAR PRIMARY KEY,
+        invoice_number VARCHAR UNIQUE NOT NULL,
+        repair_job_id VARCHAR,
+        job_number VARCHAR,
+        customer_id VARCHAR,
+        customer_name VARCHAR,
+        customer_phone VARCHAR,
+        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        subtotal_paise BIGINT NOT NULL DEFAULT 0,
+        discount_paise BIGINT NOT NULL DEFAULT 0,
+        tax_paise BIGINT NOT NULL DEFAULT 0,
+        total_paise BIGINT NOT NULL DEFAULT 0,
+        amount_paid_paise BIGINT NOT NULL DEFAULT 0,
+        balance_due_paise BIGINT NOT NULL DEFAULT 0,
+        status VARCHAR NOT NULL DEFAULT 'draft',
+        issued_at TIMESTAMPTZ DEFAULT NOW(),
+        due_date TIMESTAMPTZ,
+        notes TEXT,
+        created_by VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 7. Payments Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_payments (
+        id VARCHAR PRIMARY KEY,
+        payment_reference VARCHAR UNIQUE NOT NULL,
+        invoice_id VARCHAR,
+        repair_job_id VARCHAR,
+        customer_id VARCHAR,
+        customer_name VARCHAR,
+        amount_paise BIGINT NOT NULL,
+        method VARCHAR NOT NULL,
+        external_reference VARCHAR,
+        notes TEXT,
+        recorded_by VARCHAR,
+        recorded_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 8. Inventory Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_inventory (
+        id VARCHAR PRIMARY KEY,
+        name VARCHAR NOT NULL,
+        sku VARCHAR UNIQUE NOT NULL,
+        category VARCHAR NOT NULL,
+        brand VARCHAR,
+        description TEXT,
+        quantity_available INT NOT NULL DEFAULT 0,
+        low_stock_threshold INT NOT NULL DEFAULT 5,
+        purchase_cost_paise BIGINT NOT NULL DEFAULT 0,
+        selling_price_paise BIGINT NOT NULL DEFAULT 0,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 9. Inventory Movements Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_inventory_movements (
+        id VARCHAR PRIMARY KEY,
+        product_id VARCHAR REFERENCES mrh_inventory(id) ON DELETE CASCADE,
+        product_name VARCHAR,
+        sku VARCHAR,
+        type VARCHAR NOT NULL,
+        quantity_delta INT NOT NULL,
+        previous_quantity INT NOT NULL,
+        new_quantity INT NOT NULL,
+        reference_id VARCHAR,
+        notes TEXT,
+        performed_by VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 10. Warranties Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_warranties (
+        id VARCHAR PRIMARY KEY,
+        warranty_reference VARCHAR UNIQUE NOT NULL,
+        repair_job_id VARCHAR,
+        job_number VARCHAR,
+        customer_id VARCHAR,
+        customer_name VARCHAR,
+        customer_phone VARCHAR,
+        device_info TEXT,
+        covered_work TEXT,
+        duration_days INT NOT NULL DEFAULT 30,
+        start_date DATE NOT NULL,
+        expiry_date DATE NOT NULL,
+        terms TEXT,
+        status VARCHAR DEFAULT 'active',
+        void_reason TEXT,
+        created_by VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 11. Services Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_services (
+        id VARCHAR PRIMARY KEY,
+        slug VARCHAR UNIQUE NOT NULL,
+        category VARCHAR NOT NULL,
+        title VARCHAR NOT NULL,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 12. Accessories Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_accessories (
+        id VARCHAR PRIMARY KEY,
+        name VARCHAR NOT NULL,
+        category VARCHAR NOT NULL,
+        brand VARCHAR,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 13. Enquiries Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_enquiries (
+        id VARCHAR PRIMARY KEY,
+        public_reference VARCHAR UNIQUE NOT NULL,
+        customer_name VARCHAR NOT NULL,
+        phone VARCHAR NOT NULL,
+        email VARCHAR,
+        device_type VARCHAR NOT NULL,
+        brand VARCHAR NOT NULL,
+        model VARCHAR NOT NULL,
+        imei_or_serial VARCHAR,
+        problem_category VARCHAR NOT NULL,
+        description TEXT NOT NULL,
+        preferred_visit_date VARCHAR,
+        preferred_contact_method VARCHAR DEFAULT 'whatsapp',
+        status VARCHAR DEFAULT 'new',
+        notes TEXT,
+        customer_id VARCHAR,
+        converted_job_id VARCHAR,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 14. Users / Staff Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mrh_users (
+        uid VARCHAR PRIMARY KEY,
+        email VARCHAR UNIQUE NOT NULL,
+        display_name VARCHAR NOT NULL,
+        password_hash VARCHAR,
+        role VARCHAR NOT NULL DEFAULT 'owner',
+        phone VARCHAR,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_login_at TIMESTAMPTZ
+      );
+    `);
+
+    // Seed Owner if not exists
+    await client.query(`
+      INSERT INTO mrh_users (uid, email, display_name, role, phone, active)
+      VALUES ('owner_debasish', 'debasish@mobilerepairinghouse.in', 'Debasish (Owner)', 'owner', '+91 97327 89938', TRUE)
+      ON CONFLICT (uid) DO NOTHING;
+    `);
+
+    await client.query('COMMIT');
+    console.log('Migration completed successfully!');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Migration failed:', err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+if (require.main === module) {
+  migrate().then(() => pool.end());
+}
+
+module.exports = { migrate };
