@@ -63,7 +63,13 @@ export const IPhoneRepairPage: React.FC = () => {
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
         title="iPhone Repair in Dunlop & Baranagar, Kolkata"
-        description="Independent iPhone repair assessment at Mobile Repairing House in Dunlop, Kolkata. Display replacement, battery service, charging port fix, and camera repair."
+        description="Independent iPhone repair service at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Display replacement, battery service, charging port fix, and camera repair."
+        canonicalPath="/iphone-repair"
+        keywords="iPhone repair Dunlop, iPhone screen replacement Kolkata, Apple iPhone battery Dunlop 700108, iPhone charging port Baranagar, iPhone camera fix Bonhooghly"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'iPhone Repair', url: '/iphone-repair' },
+        ]}
       />
 
       <motion.div

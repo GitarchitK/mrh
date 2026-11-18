@@ -331,7 +331,14 @@ export const ShopPage: React.FC = () => {
     <div className="bg-[#f1f3f6] min-h-screen text-slate-800">
       <SeoHead
         title="Mobile Accessories, Chargers & Spares Online Store | Dunlop, Kolkata"
-        description="Buy genuine Type-C fast chargers, boAt earphones, display screens, power banks, and smartphone accessories at Mobile Repairing House. Dunlop counter pickup & Kolkata delivery."
+        description="Buy genuine Type-C fast chargers, boAt earphones, display screens, power banks, and smartphone accessories at Mobile Repairing House, Bhajan Complex, Dunlop, Kolkata 700108. Counter pickup & Kolkata delivery."
+        canonicalPath={selectedCategory !== 'all' ? `/shop/${selectedCategory}` : '/shop'}
+        keywords="mobile accessories shop Dunlop, phone chargers Kolkata, iPhone cable Dunlop 700108, power bank Baranagar, tempered glass Bonhooghly"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Shop & Accessories', url: '/shop' },
+          ...(selectedCategory !== 'all' ? [{ name: selectedCategory, url: `/shop/${selectedCategory}` }] : []),
+        ]}
       />
 
       {/* Inject Rich Schema.org JSON-LD */}

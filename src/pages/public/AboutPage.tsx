@@ -25,7 +25,13 @@ export const AboutPage: React.FC = () => {
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
         title="About Mobile Repairing House | Dunlop, Kolkata"
-        description="Learn about Mobile Repairing House, operated by Debasish in Bhajan Complex, Dunlop, Kolkata. Transparent phone diagnostics, genuine estimates, and local service."
+        description="Learn about Mobile Repairing House, operated by Debasish in Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Transparent phone diagnostics, genuine estimates, and certified technician care."
+        canonicalPath="/about"
+        keywords="about Mobile Repairing House, phone repair shop Dunlop, Debasish mobile technician, Bhajan Complex shop 700108"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'About Us', url: '/about' },
+        ]}
       />
 
       <motion.div

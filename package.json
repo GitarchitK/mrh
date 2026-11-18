@@ -10,7 +10,8 @@
     "db:migrate": "node server/migrate.cjs",
     "db:seed": "node server/seedCustomers.cjs && node server/seedDefaults.cjs && node server/seedInventory.cjs",
     "start": "node server/index.cjs",
-    "build": "tsc -b && vite build",
+    "sitemap": "node server/sitemapGenerator.cjs",
+    "build": "node server/sitemapGenerator.cjs && tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

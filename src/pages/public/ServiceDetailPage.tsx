@@ -73,8 +73,15 @@ export const ServiceDetailPage: React.FC = () => {
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
         title={service.title}
-        description={service.shortDescription}
+        description={`${service.shortDescription} Professional service at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108.`}
+        canonicalPath={`/services/${service.slug}`}
         serviceData={{ name: service.title, description: service.shortDescription }}
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Repair Services', url: '/services' },
+          { name: service.title, url: `/services/${service.slug}` },
+        ]}
+        keywords={`${service.title} Dunlop, ${service.title} Kolkata, mobile repair Bhajan Complex, phone repair Baranagar 700108, ${service.category}`}
       />
 
       <motion.div

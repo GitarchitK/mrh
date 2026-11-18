@@ -62,7 +62,13 @@ export const AndroidRepairPage: React.FC = () => {
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
         title="Android Mobile Repair in Dunlop, Kolkata"
-        description="Specialist Android phone repairs in Dunlop. Samsung, Xiaomi, Redmi, Vivo, Oppo, Realme, OnePlus, Motorola screen and battery repair."
+        description="Specialist Android phone repairs at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Samsung, Xiaomi, Redmi, Vivo, Oppo, Realme, OnePlus, Motorola screen and battery repair."
+        canonicalPath="/android-repair"
+        keywords="Android repair Dunlop, Samsung screen replacement Kolkata, Redmi battery repair Dunlop 700108, Vivo repair Baranagar, OnePlus repair Bonhooghly"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Android Repair', url: '/android-repair' },
+        ]}
       />
 
       <motion.div

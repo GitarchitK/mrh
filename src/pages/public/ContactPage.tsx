@@ -31,7 +31,13 @@ export const ContactPage: React.FC = () => {
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
         title="Contact & Location | Mobile Repairing House Dunlop"
-        description="Location, phone, WhatsApp and directions for Mobile Repairing House at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata."
+        description="Visit Mobile Repairing House at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Phone: +91 97327 89938. Directions from Baranagar, Bonhooghly, Belgharia, Dakshineswar."
+        canonicalPath="/contact"
+        keywords="Mobile repair shop Dunlop, phone repair Bhajan Complex, Baranagar mobile repair, Bonhooghly phone repair, Belgharia mobile service, Dunlop Kolkata 700108, Mobile Repairing House Debasish"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Contact & Location', url: '/contact' },
+        ]}
       />
 
       <motion.div
@@ -206,6 +212,106 @@ export const ContactPage: React.FC = () => {
             <div>
               <span className="font-bold text-brand-navy">How to Reach:</span> Located directly on Barrackpore Trunk Road at Bhajan Complex, Dunlop, easily accessible from Dunlop Crossing, Baranagar Metro / Railway, and Bonhooghly.
             </div>
+          </div>
+        </motion.div>
+
+        {/* Local Area Catchment & Surrounding Localities Served */}
+        <motion.div
+          variants={fadeInUp}
+          className="bg-white rounded-3xl p-6 sm:p-8 border border-brand-border shadow-xs space-y-6"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-brand-border pb-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-brand-orange/10 text-brand-orange text-[11px] font-bold uppercase tracking-wider mb-1">
+                <span>Local Catchment Area &bull; PIN 700108</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-brand-navy">
+                Neighborhoods &amp; Areas We Serve
+              </h2>
+            </div>
+            <p className="text-xs text-brand-secondary sm:text-right max-w-xs">
+              Fast counter service for customers across Dunlop, Baranagar, and the entire North Kolkata B.T. Road belt.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-orange" />
+                Dunlop &amp; B.T. Road (PIN 700108)
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                Direct counter walk-in at Bhajan Complex (139 B.T. Road). Seconds from Dunlop Crossing, Dunlop Bridge, and Dunlop Bus Terminus.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-navy" />
+                Baranagar &amp; Bonhooghly (PIN 700036 / 700108)
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                Convenient 3-5 minute transit from Baranagar Metro / Railway Station, Indian Statistical Institute (ISI Kolkata), and Bonhooghly Lake.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                Belgharia &amp; Rathtala (PIN 700056)
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                Just 7-10 minutes via Feeder Road or B.T. Road corridor. Serving residents and commuters from Belgharia Station and Rathtala.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-600" />
+                Dakshineswar &amp; Ariadaha (PIN 700076)
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                8-10 minutes via Belgharia Expressway or PWD Road from Dakshineswar Skywalk, Metro terminal, and Alambazar.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-600" />
+                Sinthee &amp; Chiria More (PIN 700050)
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                Direct straight run up B.T. Road from Sinthee More, Tobin Road, Chiria More, and Cossipore.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-brand-light border border-brand-border space-y-1.5">
+              <div className="text-xs font-bold text-brand-navy flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-600" />
+                Saket Nagar &amp; Ashokegarh
+              </div>
+              <p className="text-[11px] text-brand-secondary leading-relaxed">
+                Immediate adjacent residential neighborhoods within 2-minute walking distance of Bhajan Complex counter.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Geo Information Bar */}
+          <div className="p-3.5 bg-brand-navy text-white rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-brand-orange shrink-0" />
+              <span className="font-medium text-white/90">
+                GPS: 22.6519&deg; N, 88.3752&deg; E &bull; Plus Code: {settings.plusCode}
+              </span>
+            </div>
+            <a
+              href={settings.googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-orange hover:text-white font-bold underline transition-colors"
+            >
+              Get GPS Directions on Google Maps &rarr;
+            </a>
           </div>
         </motion.div>
       </motion.div>

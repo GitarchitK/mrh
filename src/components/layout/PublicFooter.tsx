@@ -83,7 +83,7 @@ export const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/shop/audio" className="hover:text-white transition-colors text-xs text-white/70 pl-2">
+                <Link to="/shop/earphones" className="hover:text-white transition-colors text-xs text-white/70 pl-2">
                   &bull; boAt Audio & Earphones
                 </Link>
               </li>
@@ -175,8 +175,28 @@ export const PublicFooter: React.FC = () => {
           </div>
         </div>
 
+        {/* Local Area SEO Catchment Bar */}
+        <div className="py-4 border-t border-white/10 text-[11px] text-white/50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          <span className="text-brand-orange font-semibold">Service Coverage:</span>
+          <span>Dunlop (700108)</span>
+          <span>&bull;</span>
+          <span>Bhajan Complex &amp; 139 B.T. Road</span>
+          <span>&bull;</span>
+          <span>Baranagar (700036)</span>
+          <span>&bull;</span>
+          <span>Bonhooghly &amp; ISI Kolkata</span>
+          <span>&bull;</span>
+          <span>Belgharia &amp; Rathtala (700056)</span>
+          <span>&bull;</span>
+          <span>Dakshineswar (700076)</span>
+          <span>&bull;</span>
+          <span>Sinthee &amp; Chiria More (700050)</span>
+          <span>&bull;</span>
+          <span>Saket Nagar &amp; Ashokegarh</span>
+        </div>
+
         {/* Bottom Legal & Attribution */}
-        <div className="pt-8 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
+        <div className="pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
           <div>
             &copy; {new Date().getFullYear()} Mobile Repairing House. All rights reserved. Dunlop, Baranagar, Kolkata.
           </div>

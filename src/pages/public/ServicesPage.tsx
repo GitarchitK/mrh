@@ -29,8 +29,14 @@ export const ServicesPage: React.FC = () => {
   return (
     <div className="bg-brand-light min-h-screen py-10 sm:py-16">
       <SeoHead
-        title="Smartphone Repair Services"
-        description="Complete list of Android and iPhone smartphone repair services at Mobile Repairing House in Dunlop, Kolkata. Screen, battery, charging port, camera, motherboard diagnostics."
+        title="Smartphone Repair Services | Dunlop, Kolkata"
+        description="Comprehensive Android and iPhone repair services at Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Screen replacement, battery replacement, charging port repair, and motherboard diagnostics."
+        canonicalPath="/services"
+        keywords="phone repair services Dunlop, mobile repairing Kolkata, screen replacement Dunlop 700108, battery repair Baranagar, mobile charging port Bonhooghly, iPhone repair Belgharia"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+          { name: 'Repair Services', url: '/services' },
+        ]}
       />
 
       <motion.div

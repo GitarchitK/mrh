@@ -115,7 +115,12 @@ export const HomePage: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-brand-light">
       <SeoHead
         title="Expert Android & iPhone Repair in Dunlop, Kolkata"
-        description="Mobile Repairing House operated by Debasish in Bhajan Complex, Dunlop, Kolkata. Transparent diagnostics, upfront estimates, display replacement, and battery repair."
+        description="Mobile Repairing House operated by Debasish in Bhajan Complex, 139 B.T. Road, Dunlop, Kolkata 700108. Transparent diagnostics, upfront estimates, display replacement, and battery repair."
+        canonicalPath="/"
+        keywords="Mobile repair shop Dunlop, Android repair Dunlop, iPhone repair Baranagar, Mobile display replacement Dunlop, Mobile charging-port repair Kolkata, Bonhooghly phone repair, Bhajan Complex mobile shop, BT Road mobile repairing, Belgharia phone repair, Dakshineswar mobile service, Sinthee mobile repair, mobile battery replacement Dunlop 700108"
+        breadcrumbs={[
+          { name: 'Home', url: '/' },
+        ]}
       />
 
       {/* 5.3 HERO SECTION WITH MODERN ANIMATIONS & FLOATING BADGES */}

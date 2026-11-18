@@ -1483,6 +1483,37 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   }
 });
 
+// ============================================================================
+// SEO & WEB CRAWLER ENDPOINTS (Search Engine Fetchable Sitemap & Robots)
+// ============================================================================
+const { generateSitemapXml } = require('./sitemapGenerator.cjs');
+
+app.get('/sitemap.xml', (req, res) => {
+  try {
+    const xml = generateSitemapXml();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    return res.status(200).send(xml);
+  } catch (err) {
+    const sitemapPath = path.resolve(__dirname, '../public/sitemap.xml');
+    if (fs.existsSync(sitemapPath)) {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      return res.status(200).sendFile(sitemapPath);
+    }
+    return res.status(500).send('<error>Failed to generate sitemap</error>');
+  }
+});
+
+app.get('/robots.txt', (req, res) => {
+  const robotsPath = path.resolve(__dirname, '../public/robots.txt');
+  if (fs.existsSync(robotsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).sendFile(robotsPath);
+  }
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  return res.status(200).send("User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /estimate-approval/\n\nSitemap: https://mobilerepairinghouse.com/sitemap.xml\n");
+});
+
 // Serve static frontend assets if built
 const distPath = path.resolve(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
