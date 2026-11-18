@@ -570,6 +570,16 @@ export const VoiceCounterAssistantModal: React.FC = () => {
                 <div className="col-span-2 p-2.5 rounded-xl bg-brand-light border border-brand-border/60">
                   <span className="text-[10px] font-bold text-brand-secondary block uppercase">Product Name</span>
                   <span className="font-bold text-brand-navy">{parsedStock.name || '—'}</span>
+                  {parsedStock.brand && (
+                    <span className="inline-block mt-1 mr-2 px-1.5 py-0.5 rounded bg-brand-navy/10 text-[10px] font-semibold text-brand-navy">
+                      Brand: {parsedStock.brand}
+                    </span>
+                  )}
+                  {parsedStock.serialNumber && (
+                    <span className="inline-block mt-1 px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-mono font-semibold">
+                      S/N: {parsedStock.serialNumber}
+                    </span>
+                  )}
                 </div>
                 <div className="p-2.5 rounded-xl bg-brand-light border border-brand-border/60">
                   <span className="text-[10px] font-bold text-brand-secondary block uppercase">Quantity</span>

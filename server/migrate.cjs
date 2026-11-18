@@ -193,9 +193,11 @@ async function migrate() {
         purchase_cost_paise BIGINT NOT NULL DEFAULT 0,
         selling_price_paise BIGINT NOT NULL DEFAULT 0,
         active BOOLEAN DEFAULT TRUE,
+        serial_number VARCHAR,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+      ALTER TABLE mrh_inventory ADD COLUMN IF NOT EXISTS serial_number VARCHAR;
     `);
 
     // 9. Inventory Movements Table

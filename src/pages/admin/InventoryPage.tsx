@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   Mic,
   Sparkles,
+  Tag,
+  Barcode,
+  Hash,
 } from 'lucide-react';
 import {
   getInventoryProducts,
@@ -26,6 +29,39 @@ import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { formatPaiseToINR, rupeesToPaise } from '../../lib/money';
 import { formatDate, formatDateTime } from '../../lib/utils';
+
+const BRAND_OPTIONS = [
+  { value: 'Universal', label: 'Universal / Multi-brand' },
+  { value: 'Apple', label: 'Apple (iPhone / iPad)' },
+  { value: 'Samsung', label: 'Samsung' },
+  { value: 'Xiaomi', label: 'Xiaomi / Redmi / POCO' },
+  { value: 'Realme', label: 'Realme' },
+  { value: 'OnePlus', label: 'OnePlus' },
+  { value: 'Vivo', label: 'Vivo' },
+  { value: 'Oppo', label: 'Oppo' },
+  { value: 'Motorola', label: 'Motorola' },
+  { value: 'Google Pixel', label: 'Google Pixel' },
+  { value: 'Nothing', label: 'Nothing Phone' },
+  { value: 'Infinix', label: 'Infinix' },
+  { value: 'Tecno', label: 'Tecno' },
+  { value: 'iQOO', label: 'iQOO' },
+  { value: 'boAt', label: 'boAt' },
+  { value: 'Noise', label: 'Noise' },
+  { value: 'Portronics', label: 'Portronics' },
+  { value: 'Generic OEM', label: 'Generic / OEM Compatible' },
+  { value: 'custom', label: 'Other (Enter Custom Brand)...' },
+];
+
+const QUICK_BRAND_PILLS = [
+  'Apple',
+  'Samsung',
+  'Xiaomi',
+  'Realme',
+  'OnePlus',
+  'Vivo',
+  'Oppo',
+  'Universal',
+];
 
 export const InventoryPage: React.FC = () => {
   const { currentUser, isOwner } = useAuth();
@@ -46,7 +82,9 @@ export const InventoryPage: React.FC = () => {
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [category, setCategory] = useState<any>('displays');
-  const [brand, setBrand] = useState('');
+  const [brandSelection, setBrandSelection] = useState('Universal');
+  const [customBrand, setCustomBrand] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
   const [initialQty, setInitialQty] = useState('5');
   const [lowStockThresh, setLowStockThresh] = useState('2');
   const [costRupees, setCostRupees] = useState('');
@@ -58,6 +96,19 @@ export const InventoryPage: React.FC = () => {
   const [adjustType, setAdjustType] = useState<'stock_in' | 'stock_out' | 'repair_consumed' | 'adjustment'>('stock_in');
   const [adjustReason, setAdjustReason] = useState('');
   const [adjusting, setAdjusting] = useState(false);
+
+  const resetProductForm = () => {
+    setName('');
+    setSku('');
+    setCategory('displays');
+    setBrandSelection('Universal');
+    setCustomBrand('');
+    setSerialNumber('');
+    setInitialQty('5');
+    setLowStockThresh('2');
+    setCostRupees('');
+    setSellingRupees('');
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -78,7 +129,19 @@ export const InventoryPage: React.FC = () => {
       if (data.name) setName(data.name);
       if (data.sku) setSku(data.sku);
       if (data.category) setCategory(data.category);
-      if (data.brand) setBrand(data.brand);
+      if (data.brand) {
+        const found = BRAND_OPTIONS.find(
+          (b) => b.value.toLowerCase() === data.brand!.toLowerCase() || b.label.toLowerCase().includes(data.brand!.toLowerCase())
+        );
+        if (found && found.value !== 'custom') {
+          setBrandSelection(found.value);
+          setCustomBrand('');
+        } else {
+          setBrandSelection('custom');
+          setCustomBrand(data.brand);
+        }
+      }
+      if (data.serialNumber) setSerialNumber(data.serialNumber);
       if (data.quantity) setInitialQty(String(data.quantity));
       if (data.costRupees) setCostRupees(data.costRupees);
       if (data.sellingRupees) setSellingRupees(data.sellingRupees);
@@ -93,6 +156,10 @@ export const InventoryPage: React.FC = () => {
       return;
     }
 
+    const resolvedBrand = brandSelection === 'custom'
+      ? customBrand.trim()
+      : (brandSelection === 'Universal' ? 'Universal' : brandSelection.trim());
+
     setSavingProduct(true);
     try {
       const now = new Date().toISOString();
@@ -101,7 +168,8 @@ export const InventoryPage: React.FC = () => {
         name: name.trim(),
         sku: sku.trim().toUpperCase(),
         category,
-        brand: brand.trim() || undefined,
+        brand: resolvedBrand || undefined,
+        serialNumber: serialNumber.trim().toUpperCase() || undefined,
         quantityAvailable: Math.max(0, parseInt(initialQty) || 0),
         lowStockThreshold: Math.max(0, parseInt(lowStockThresh) || 2),
         purchaseCostPaise: rupeesToPaise(costRupees || 0),
@@ -113,11 +181,7 @@ export const InventoryPage: React.FC = () => {
 
       await saveInventoryProduct(newProd);
       setProductModalOpen(false);
-      setName('');
-      setSku('');
-      setBrand('');
-      setCostRupees('');
-      setSellingRupees('');
+      resetProductForm();
       await loadData();
     } catch (err) {
       console.error('Failed to save product:', err);
@@ -163,10 +227,13 @@ export const InventoryPage: React.FC = () => {
   };
 
   const filtered = products.filter((p) => {
+    const q = search.toLowerCase().trim();
     const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.brand && p.brand.toLowerCase().includes(search.toLowerCase()));
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      (p.brand && p.brand.toLowerCase().includes(q)) ||
+      (p.serialNumber && p.serialNumber.toLowerCase().includes(q));
 
     const matchesCat = categoryFilter === 'all' || p.category === categoryFilter;
     return matchesSearch && matchesCat;
@@ -180,7 +247,7 @@ export const InventoryPage: React.FC = () => {
             Inventory & Spare Parts
           </h1>
           <p className="text-xs text-brand-secondary mt-0.5">
-            Track replacement displays, batteries, charging ports, and counter accessories.
+            Track replacement displays, batteries, charging ports, accessories, and serialized parts.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -196,7 +263,10 @@ export const InventoryPage: React.FC = () => {
             size="sm"
             variant="primary"
             leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
-            onClick={() => setProductModalOpen(true)}
+            onClick={() => {
+              resetProductForm();
+              setProductModalOpen(true);
+            }}
           >
             Add Product / Part
           </Button>
@@ -207,7 +277,7 @@ export const InventoryPage: React.FC = () => {
       <div className="bg-white p-4 rounded-2xl border border-brand-border shadow-xs flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Search by part name, SKU (e.g. DSP-SAM), or brand..."
+            placeholder="Search by part name, SKU (e.g. DSP-SAM), brand, or serial / IMEI..."
             enableVoice
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -253,11 +323,23 @@ export const InventoryPage: React.FC = () => {
                   className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-brand-light/40 transition-colors"
                 >
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-bold text-xs bg-brand-light px-2 py-0.5 rounded border border-brand-border text-brand-navy">
                         {prod.sku}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-secondary">
+                      {prod.brand && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                          <Tag className="w-3 h-3 text-blue-600" />
+                          <span>{prod.brand}</span>
+                        </span>
+                      )}
+                      {prod.serialNumber && (
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200">
+                          <Barcode className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>S/N: {prod.serialNumber}</span>
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-secondary bg-slate-100 px-2 py-0.5 rounded">
                         {prod.category.replace('_', ' ')}
                       </span>
                       {isLow && (
@@ -273,13 +355,19 @@ export const InventoryPage: React.FC = () => {
                     </div>
 
                     <div className="text-[11px] text-brand-secondary flex flex-wrap items-center gap-3">
-                      <span>Brand: {prod.brand || 'Universal'}</span>
+                      <span>Brand: <strong className="text-brand-navy">{prod.brand || 'Universal'}</strong></span>
+                      {prod.serialNumber && (
+                        <>
+                          <span>&bull;</span>
+                          <span>Serial / IMEI: <strong className="font-mono text-indigo-700">{prod.serialNumber}</strong></span>
+                        </>
+                      )}
                       <span>&bull;</span>
-                      <span>Selling Price: <strong className="text-brand-text">{formatPaiseToINR(prod.sellingPricePaise)}</strong></span>
+                      <span>Selling Price: <strong className="text-brand-text font-bold">{formatPaiseToINR(prod.sellingPricePaise)}</strong></span>
                       {isOwner && (
                         <>
                           <span>&bull;</span>
-                          <span className="italic">Purchase Cost: {formatPaiseToINR(prod.purchaseCostPaise)}</span>
+                          <span className="italic">Wholesale: {formatPaiseToINR(prod.purchaseCostPaise)}</span>
                         </>
                       )}
                     </div>
@@ -322,9 +410,12 @@ export const InventoryPage: React.FC = () => {
       {/* Add Product Modal */}
       <Modal
         isOpen={productModalOpen}
-        onClose={() => setProductModalOpen(false)}
+        onClose={() => {
+          setProductModalOpen(false);
+          resetProductForm();
+        }}
         title="Add Inventory Product or Spare Part"
-        description="Register a new component for repair jobs or retail sale."
+        description="Register a new component for repair jobs or retail sale with brand & serial tracking."
       >
         <div className="mb-4 p-3 bg-brand-light rounded-xl border border-brand-border flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
@@ -348,12 +439,72 @@ export const InventoryPage: React.FC = () => {
           <Input
             label="Product / Part Name *"
             required
-            placeholder="e.g. Redmi Note 10 Pro Display (AMOLED)"
+            placeholder="e.g. Redmi Note 10 Pro Display (AMOLED) or iPhone 13 Battery"
             enableVoice
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
+          {/* Brand Selector Section */}
+          <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-brand-navy uppercase tracking-wider flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-brand-orange" />
+                <span>Choose Brand / Manufacturer *</span>
+              </label>
+              {brandSelection !== 'custom' && (
+                <span className="text-[11px] font-semibold text-slate-500">
+                  Selected: <strong className="text-brand-navy">{brandSelection}</strong>
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select
+                value={brandSelection}
+                onChange={(e) => setBrandSelection(e.target.value)}
+              >
+                {BRAND_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+
+              {brandSelection === 'custom' ? (
+                <Input
+                  required
+                  placeholder="Type custom brand (e.g. Realme, Portronics)..."
+                  value={customBrand}
+                  onChange={(e) => setCustomBrand(e.target.value)}
+                  enableVoice
+                />
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase w-full">Quick Brand Pick:</span>
+                  {QUICK_BRAND_PILLS.map((pill) => (
+                    <button
+                      key={pill}
+                      type="button"
+                      onClick={() => {
+                        setBrandSelection(pill);
+                        setCustomBrand('');
+                      }}
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-md border transition-all ${
+                        brandSelection === pill
+                          ? 'bg-brand-navy text-white border-brand-navy shadow-xs'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-brand-navy hover:text-brand-navy'
+                      }`}
+                    >
+                      {pill}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SKU and Serial Number */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="SKU Identifier *"
@@ -361,8 +512,21 @@ export const InventoryPage: React.FC = () => {
               placeholder="e.g. DSP-REDMI-N10P"
               enableVoice
               value={sku}
-              onChange={(e) => setSku(e.target.value)}
+              onChange={(e) => setSku(e.target.value.toUpperCase())}
             />
+
+            <Input
+              label="Serial Number / IMEI / Batch Code (Optional)"
+              placeholder="e.g. SN-A2442-998812 or 864293048123456"
+              enableVoice
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
+              helperText="Unique barcode / IMEI / serial for tracking warranty & replacements"
+            />
+          </div>
+
+          {/* Category & Initial Qty */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Category *"
               value={category}
@@ -378,9 +542,7 @@ export const InventoryPage: React.FC = () => {
               <option value="cameras">Cameras</option>
               <option value="other">Other Components</option>
             </Select>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Initial Quantity in Hand *"
               type="number"
@@ -389,17 +551,19 @@ export const InventoryPage: React.FC = () => {
               value={initialQty}
               onChange={(e) => setInitialQty(e.target.value)}
             />
+          </div>
+
+          {/* Stock threshold & Prices */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
-              label="Low Stock Warning Threshold *"
+              label="Low Stock Alert Threshold *"
               type="number"
               min="1"
               required
               value={lowStockThresh}
               onChange={(e) => setLowStockThresh(e.target.value)}
             />
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Selling Price (₹) *"
               type="number"
@@ -408,6 +572,7 @@ export const InventoryPage: React.FC = () => {
               value={sellingRupees}
               onChange={(e) => setSellingRupees(e.target.value)}
             />
+
             {isOwner && (
               <Input
                 label="Wholesale Cost (₹) (Private)"
@@ -419,8 +584,15 @@ export const InventoryPage: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setProductModalOpen(false)}>
+          <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setProductModalOpen(false);
+                resetProductForm();
+              }}
+            >
               Cancel
             </Button>
             <Button type="submit" variant="primary" isLoading={savingProduct}>

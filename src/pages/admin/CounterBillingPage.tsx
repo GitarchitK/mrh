@@ -262,6 +262,8 @@ export const CounterBillingPage: React.FC = () => {
       badge?: string;
       stock?: number;
       sku?: string;
+      brand?: string;
+      serialNumber?: string;
     }[] = [];
 
     // 1. Add services
@@ -306,6 +308,8 @@ export const CounterBillingPage: React.FC = () => {
           badge: `In Stock: ${inv.quantityAvailable}`,
           stock: inv.quantityAvailable,
           sku: inv.sku,
+          brand: inv.brand,
+          serialNumber: inv.serialNumber,
         });
       }
     });
@@ -338,7 +342,9 @@ export const CounterBillingPage: React.FC = () => {
         const q = searchQuery.toLowerCase();
         const matchesName = item.name.toLowerCase().includes(q);
         const matchesSku = item.sku?.toLowerCase().includes(q);
-        if (!matchesName && !matchesSku) return false;
+        const matchesBrand = item.brand?.toLowerCase().includes(q);
+        const matchesSerial = item.serialNumber?.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku && !matchesBrand && !matchesSerial) return false;
       }
 
       return true;
@@ -422,7 +428,10 @@ export const CounterBillingPage: React.FC = () => {
 
     const term = barcodeInput.trim().toLowerCase();
     const matched = allPOSProducts.find(
-      (p) => p.sku?.toLowerCase() === term || p.name.toLowerCase().includes(term)
+      (p) =>
+        p.sku?.toLowerCase() === term ||
+        p.serialNumber?.toLowerCase() === term ||
+        p.name.toLowerCase().includes(term)
     );
 
     if (matched) {
@@ -857,10 +866,15 @@ export const CounterBillingPage: React.FC = () => {
                   )}
 
                   <div>
-                    <div className="flex items-center gap-1.5 mb-1">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                         {prod.type}
                       </span>
+                      {prod.brand && (
+                        <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                          {prod.brand}
+                        </span>
+                      )}
                       {prod.badge && (
                         <span className="text-[9px] font-medium text-brand-orange truncate max-w-[100px]">
                           {prod.badge}
@@ -870,6 +884,11 @@ export const CounterBillingPage: React.FC = () => {
                     <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-brand-navy">
                       {prod.name}
                     </div>
+                    {prod.serialNumber && (
+                      <div className="text-[9px] font-mono text-indigo-700 font-semibold truncate mt-0.5">
+                        S/N: {prod.serialNumber}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">

@@ -298,6 +298,7 @@ export interface InventoryProduct {
   sku: string;
   category: 'displays' | 'batteries' | 'charging_ports' | 'cables' | 'chargers' | 'earphones' | 'headphones' | 'power_banks' | 'back_glass' | 'cameras' | 'other';
   brand?: string;
+  serialNumber?: string;
   description?: string;
   quantityAvailable: number;
   lowStockThreshold: number;

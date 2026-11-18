@@ -177,6 +177,7 @@ function mapInventory(row) {
     sku: row.sku,
     category: row.category,
     brand: row.brand,
+    serialNumber: row.serial_number || undefined,
     description: row.description,
     quantityAvailable: Number(row.quantity_available || 0),
     lowStockThreshold: Number(row.low_stock_threshold || 0),
@@ -1103,13 +1104,13 @@ app.post('/api/inventory', async (req, res) => {
     const id = i.id || `inv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const result = await pool.query(`
       INSERT INTO mrh_inventory (
-        id, name, sku, category, brand, description, quantity_available,
+        id, name, sku, category, brand, serial_number, description, quantity_available,
         low_stock_threshold, purchase_cost_paise, selling_price_paise, active,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, NOW(), NOW())
       RETURNING *;
     `, [
-      id, i.name, i.sku, i.category, i.brand || null, i.description || null,
+      id, i.name, i.sku, i.category, i.brand || null, i.serialNumber || null, i.description || null,
       i.quantityAvailable || 0, i.lowStockThreshold || 5,
       i.purchaseCostPaise || 0, i.sellingPricePaise || 0
     ]);
@@ -1127,16 +1128,17 @@ app.put('/api/inventory/:id', async (req, res) => {
         name = COALESCE($2, name),
         category = COALESCE($3, category),
         brand = COALESCE($4, brand),
-        description = COALESCE($5, description),
-        quantity_available = COALESCE($6, quantity_available),
-        low_stock_threshold = COALESCE($7, low_stock_threshold),
-        purchase_cost_paise = COALESCE($8, purchase_cost_paise),
-        selling_price_paise = COALESCE($9, selling_price_paise),
-        active = COALESCE($10, active),
+        serial_number = COALESCE($5, serial_number),
+        description = COALESCE($6, description),
+        quantity_available = COALESCE($7, quantity_available),
+        low_stock_threshold = COALESCE($8, low_stock_threshold),
+        purchase_cost_paise = COALESCE($9, purchase_cost_paise),
+        selling_price_paise = COALESCE($10, selling_price_paise),
+        active = COALESCE($11, active),
         updated_at = NOW()
       WHERE id = $1 RETURNING *;
     `, [
-      req.params.id, i.name, i.category, i.brand, i.description,
+      req.params.id, i.name, i.category, i.brand, i.serialNumber, i.description,
       i.quantityAvailable, i.lowStockThreshold, i.purchaseCostPaise,
       i.sellingPricePaise, i.active
     ]);

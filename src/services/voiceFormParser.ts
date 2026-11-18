@@ -25,6 +25,7 @@ export interface ParsedStockData {
   sku?: string;
   category?: InventoryCategory;
   brand?: string;
+  serialNumber?: string;
   quantity?: number;
   costRupees?: string;
   sellingRupees?: string;
@@ -266,6 +267,12 @@ export const parseStockVoice = (text: string): ParsedStockData => {
       result.brand = b === 'apple' || b === 'iphone' ? 'Apple' : b.charAt(0).toUpperCase() + b.slice(1);
       break;
     }
+  }
+
+  // 5b. Serial number / IMEI detection
+  const serialMatch = clean.match(/(?:serial(?:\s*number)?|imei|sn|s\/n|batch(?:\s*no)?)\s*[:=]?\s*([a-zA-Z0-9\-_]{4,30})/i);
+  if (serialMatch) {
+    result.serialNumber = serialMatch[1].trim();
   }
 
   // 6. Product Name
