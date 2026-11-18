@@ -15,9 +15,31 @@ export async function apiRequest<T>(endpoint: string, options?: RequestInit): Pr
     },
   });
 
+  const contentType = res.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody.error || `Request failed with status ${res.status}`);
+    if (isJson) {
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(errorBody.error || `Request failed with status ${res.status}`);
+    }
+    if (res.status === 405) {
+      throw new Error(
+        'Server returned 405 (Method Not Allowed). Backend API server is not running or route rewrite is unconfigured.'
+      );
+    }
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      throw new Error(
+        'Backend API server is unreachable. Please ensure the backend server is running via "npm run dev".'
+      );
+    }
+    throw new Error(`Request failed with status ${res.status}`);
+  }
+
+  if (!isJson) {
+    throw new Error(
+      `Received non-JSON response from ${cleanEndpoint}. Backend server may not be running.`
+    );
   }
 
   return res.json();
