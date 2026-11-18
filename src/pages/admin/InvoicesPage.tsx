@@ -589,8 +589,8 @@ export const InvoicesPage: React.FC = () => {
           isOpen={Boolean(printInvoice)}
           onClose={() => setPrintInvoice(null)}
           title="Official Receipt & Tax Invoice"
-          description={`Bill No: ${printInvoice.invoiceNumber}`}
-          maxWidth="4xl"
+          description={`Bill No: ${printInvoice.invoiceNumber} • A5 Paper Format`}
+          maxWidth="2xl"
         >
           <CounterBillPrint
             invoice={printInvoice}

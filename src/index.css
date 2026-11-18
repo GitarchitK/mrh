@@ -129,8 +129,8 @@
 /* Print Styles for Job Sheets and Invoices */
 @media print {
   @page {
-    margin: 8mm;
-    size: auto;
+    size: A5 portrait;
+    margin: 4mm 6mm;
   }
 
   html,
@@ -182,24 +182,11 @@
   .print-content {
     border: 1px solid #cbd5e1 !important;
     box-shadow: none !important;
-    padding: 6mm !important;
+    padding: 4mm !important;
     margin: 0 auto !important;
     width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 12px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-
-  .print-thermal-content {
-    border: 1px dashed #64748b !important;
-    box-shadow: none !important;
-    padding: 3mm !important;
-    margin: 0 auto !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
-    font-family: monospace !important;
+    max-width: 140mm !important;
+    border-radius: 8px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;

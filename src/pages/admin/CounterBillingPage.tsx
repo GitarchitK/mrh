@@ -1256,8 +1256,8 @@ export const CounterBillingPage: React.FC = () => {
             clearCart();
           }}
           title="Official Counter Bill Receipt"
-          description={`Bill No: ${printModalInvoice.invoiceNumber}`}
-          maxWidth="4xl"
+          description={`Bill No: ${printModalInvoice.invoiceNumber} • A5 Paper Format`}
+          maxWidth="2xl"
         >
           <CounterBillPrint
             invoice={printModalInvoice}

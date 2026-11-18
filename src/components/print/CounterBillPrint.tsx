@@ -4,7 +4,6 @@ import { formatDate, formatDateTime, formatPhoneNumber } from '../../lib/utils';
 import { formatPaiseToINR } from '../../lib/money';
 import {
   Printer,
-  Share2,
   CheckCircle,
   AlertCircle,
   QrCode,
@@ -13,9 +12,9 @@ import {
   Smartphone,
   Phone,
   MessageSquare,
-  Sparkles,
   Check,
   Copy,
+  FileText,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -26,7 +25,6 @@ interface CounterBillPrintProps {
 }
 
 export const CounterBillPrint: React.FC<CounterBillPrintProps> = ({ invoice, settings, onClose }) => {
-  const [printFormat, setPrintFormat] = useState<'standard' | 'thermal'>('standard');
   const [copied, setCopied] = useState(false);
   const printContainerRef = useRef<HTMLDivElement>(null);
 
@@ -55,8 +53,7 @@ export const CounterBillPrint: React.FC<CounterBillPrintProps> = ({ invoice, set
 *Bill Number:* ${invoice.invoiceNumber}
 *Date:* ${formatDate(invoice.issuedAt)}
 *Customer:* ${invoice.customerName}
-${invoice.jobNumber ? `*Job Reference:* ${invoice.jobNumber}\n` : ''}
-*Billed Items:*
+${invoice.jobNumber ? `*Job Reference:* ${invoice.jobNumber}\n` : ''}*Billed Items:*
 ${itemListText}
 ---------------------------------------
 *Subtotal:* ${formatPaiseToINR(invoice.subtotalPaise)}
@@ -80,7 +77,7 @@ Thank you for trusting ${shopName}!`;
   const upiUrl = `upi://pay?pa=${upiPayee}&pn=Mobile%20Repairing%20House&am=${totalRupees}&cu=INR&tn=Bill%20${invoice.invoiceNumber}`;
   const qrCodeImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(upiUrl)}`;
 
-  // Dedicated Isolated Print Engine (Prints ONLY the styled bill in its exact design, NOT the browser page)
+  // Dedicated Isolated Print Engine for A5 Paper
   const handleExactPrint = () => {
     if (!printContainerRef.current) {
       window.print();
@@ -88,7 +85,6 @@ Thank you for trusting ${shopName}!`;
     }
 
     const billHtml = printContainerRef.current.innerHTML;
-    const isThermal = printFormat === 'thermal';
 
     // Remove any previous print iframe
     const oldIframe = document.getElementById('pos-isolated-print-frame');
@@ -114,15 +110,15 @@ Thank you for trusting ${shopName}!`;
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Bill_${invoice.invoiceNumber}_${shopName.replace(/\s+/g, '_')}</title>
+          <title>Bill_${invoice.invoiceNumber}_Mobile_Repairing_House</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @page {
-              size: ${isThermal ? '80mm auto' : 'A4 portrait'};
-              margin: ${isThermal ? '2mm' : '8mm'};
+              size: A5 portrait;
+              margin: 4mm 6mm;
             }
             * {
               box-sizing: border-box;
@@ -136,14 +132,24 @@ Thank you for trusting ${shopName}!`;
               background: #ffffff !important;
               color: #0f172a !important;
               font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+              width: 100%;
+            }
+            .a5-print-wrapper {
+              width: 100%;
+              max-width: 138mm;
+              margin: 0 auto;
             }
             .no-print {
               display: none !important;
             }
+            /* Avoid splitting table rows across page if table grows */
+            tr {
+              page-break-inside: avoid;
+            }
           </style>
         </head>
-        <body class="p-2 sm:p-4">
-          <div class="${isThermal ? 'max-w-[340px]' : 'max-w-3xl'} mx-auto">
+        <body class="p-0">
+          <div class="a5-print-wrapper">
             ${billHtml}
           </div>
         </body>
@@ -171,12 +177,12 @@ Thank you for trusting ${shopName}!`;
 
   return (
     <div className="printable-bill-root text-slate-900 font-sans">
-      {/* Top Action & Format Bar (Hidden in Print) */}
-      <div className="no-print bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+      {/* Top Action Bar (Hidden in Print) */}
+      <div className="no-print bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Receipt className="w-4 h-4 text-brand-orange" />
               Customer Bill & Payment Receipt
             </h2>
@@ -191,30 +197,10 @@ Thank you for trusting ${shopName}!`;
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Format Selector */}
-          <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setPrintFormat('standard')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                printFormat === 'standard'
-                  ? 'bg-white text-brand-navy shadow-xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Standard A4
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrintFormat('thermal')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                printFormat === 'thermal'
-                  ? 'bg-white text-brand-navy shadow-xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Thermal Slip (80mm)
-            </button>
+          {/* A5 Format Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+            <FileText className="w-3.5 h-3.5 text-brand-orange" />
+            <span>A5 Paper (148 × 210 mm)</span>
           </div>
 
           {/* Copy Bill Number */}
@@ -240,15 +226,15 @@ Thank you for trusting ${shopName}!`;
             WhatsApp Bill
           </Button>
 
-          {/* Exact Modern Print Button */}
+          {/* Exact Modern A5 Print Button */}
           <Button
             size="sm"
             variant="primary"
-            className="text-xs bg-brand-navy hover:bg-brand-navy-dark text-white font-bold"
+            className="text-xs bg-brand-navy hover:bg-brand-navy-dark text-white font-bold shadow-xs"
             leftIcon={<Printer className="w-3.5 h-3.5" />}
             onClick={handleExactPrint}
           >
-            Print Receipt
+            Print A5 Bill
           </Button>
 
           {onClose && (
@@ -260,389 +246,260 @@ Thank you for trusting ${shopName}!`;
       </div>
 
       {/* ============================================================== */}
-      {/* PRINTABLE BILL CONTAINER (CAPTURED BY EXACT PRINT ENGINE)      */}
+      {/* A5 PRINTABLE BILL CONTAINER                                    */}
+      {/* Specifically sized and styled for A5 portrait (148mm × 210mm)   */}
       {/* ============================================================== */}
-      <div ref={printContainerRef}>
-        {printFormat === 'standard' ? (
-          /* ============================================================== */
-          /* 1. MODERN A4 TAX INVOICE & RECEIPT                             */
-          /* ============================================================== */
-          <div className="print-content bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-lg text-slate-800 text-xs leading-relaxed max-w-3xl mx-auto">
-            {/* Top Accent Gradient Bar */}
-            <div className="h-2 w-full bg-gradient-to-r from-brand-orange via-amber-500 to-brand-navy rounded-full mb-8" />
+      <div ref={printContainerRef} className="a5-print-wrapper max-w-[620px] mx-auto">
+        <div className="print-content bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm text-slate-800 text-xs leading-tight">
+          {/* Top Accent Gradient Bar */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-brand-orange via-amber-500 to-brand-navy rounded-full mb-3.5" />
 
-            {/* Header: Store Branding & Unique Bill Badge */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b-2 border-slate-900/10 pb-6 mb-6">
-              {/* Left: Store Branding */}
-              <div className="flex items-start gap-4">
-                <div className="relative shrink-0">
-                  <img
-                    src="/images/logo.png"
-                    alt="Mobile Repairing House Logo"
-                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-2xl p-1 bg-white border border-slate-200 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <div className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-brand-navy font-bold text-[10px] uppercase tracking-wider mb-1 border border-slate-200">
-                    Smartphone Care & Accessories Center
-                  </div>
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">
-                    {shopName}
-                  </h1>
-                  <p className="text-[11px] text-slate-600 font-medium leading-snug max-w-sm mt-0.5">
-                    {shopAddress}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-700 mt-2">
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-brand-orange" />
-                      {shopPhone}
-                    </span>
-                    <span>&bull;</span>
-                    <span className="text-slate-600">Contact: {ownerName}</span>
-                    <span>&bull;</span>
-                    <span className="text-slate-500 font-mono text-[10px]">Plus Code: M92H+Q4</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Unique Bill Badge with Barcode Visual */}
-              <div className="sm:text-right shrink-0 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 w-full sm:w-auto">
-                <div className="text-[10px] font-black uppercase tracking-wider text-brand-orange">
-                  Tax Invoice & Cash Receipt
-                </div>
-                <div className="text-lg sm:text-xl font-mono font-black text-slate-900 mt-0.5 tracking-tight">
-                  {invoice.invoiceNumber}
-                </div>
-
-                {/* Simulated Barcode Lines */}
-                <div className="flex justify-end items-center gap-0.5 py-1.5 my-1 border-y border-dashed border-slate-200">
-                  <div className="w-1 h-5 bg-slate-800" />
-                  <div className="w-0.5 h-5 bg-slate-800" />
-                  <div className="w-1.5 h-5 bg-slate-800" />
-                  <div className="w-0.5 h-5 bg-slate-800" />
-                  <div className="w-2 h-5 bg-slate-800" />
-                  <div className="w-1 h-5 bg-slate-800" />
-                  <div className="w-0.5 h-5 bg-slate-800" />
-                  <div className="w-1.5 h-5 bg-slate-800" />
-                  <div className="w-1 h-5 bg-slate-800" />
-                  <div className="w-0.5 h-5 bg-slate-800" />
-                  <div className="w-2 h-5 bg-slate-800" />
-                  <div className="w-1 h-5 bg-slate-800" />
-                  <div className="w-1.5 h-5 bg-slate-800" />
-                  <div className="w-0.5 h-5 bg-slate-800" />
-                  <div className="w-1 h-5 bg-slate-800" />
-                </div>
-
-                <div className="text-[11px] text-slate-500">
-                  Issued: <strong className="text-slate-800 font-semibold">{formatDateTime(invoice.issuedAt)}</strong>
-                </div>
-                {invoice.jobNumber && (
-                  <div className="text-[11px] text-slate-600 mt-0.5 font-mono">
-                    Repair Job: <strong className="text-slate-900">{invoice.jobNumber}</strong>
-                  </div>
-                )}
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  Biller: <span className="font-medium text-slate-600">{invoice.createdBy || ownerName}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Customer Information & Verified Status Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gradient-to-br from-slate-50 to-slate-100/50 p-4 sm:p-5 rounded-2xl border border-slate-200 mb-6">
+          {/* Header: Store Branding & Unique Bill Badge */}
+          <div className="flex justify-between items-start gap-4 border-b border-slate-200 pb-3 mb-3">
+            {/* Left: Store Branding */}
+            <div className="flex items-start gap-3">
+              <img
+                src="/images/logo.png"
+                alt="Mobile Repairing House Logo"
+                className="w-12 h-12 object-contain rounded-xl p-0.5 bg-white border border-slate-200 shadow-2xs shrink-0"
+              />
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Billed To Customer
+                <span className="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-brand-navy font-bold text-[9px] uppercase tracking-wider mb-0.5 border border-slate-200">
+                  Smartphone Care & Accessories Center
                 </span>
-                <div className="text-sm sm:text-base font-black text-slate-900">
-                  {invoice.customerName}
-                </div>
-                <div className="text-xs font-semibold text-slate-700 mt-0.5 flex items-center gap-1">
-                  <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-                  {formatPhoneNumber(invoice.customerPhone)}
-                </div>
-                {invoice.notes && (
-                  <div className="text-[11px] text-slate-500 mt-1 italic">
-                    Note: &ldquo;{invoice.notes}&rdquo;
-                  </div>
-                )}
-              </div>
-
-              <div className="sm:text-right flex flex-col sm:items-end justify-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Settlement Status
-                </span>
-                <div>
-                  {isPaidInFull ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-xs uppercase tracking-wide shadow-2xs">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      Paid in Full &bull; Verified
-                    </span>
-                  ) : isPartial ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 font-black text-xs uppercase tracking-wide">
-                      <AlertCircle className="w-4 h-4 text-amber-600" />
-                      Partially Paid
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 text-rose-800 border border-rose-300 font-black text-xs uppercase tracking-wide">
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                      Payment Due
-                    </span>
-                  )}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  Tender Mode:{' '}
-                  <strong className="text-slate-800 capitalize">{invoice.paymentMethod || 'Cash / Counter'}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Itemized Products & Services Table */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 mb-6">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-900 text-white uppercase text-[10px] font-bold tracking-wider">
-                    <th className="py-3 px-3 w-10 text-center">#</th>
-                    <th className="py-3 px-4">Item & Service Description</th>
-                    <th className="py-3 px-3 text-center">Category</th>
-                    <th className="py-3 px-3 text-center">Qty</th>
-                    <th className="py-3 px-4 text-right">Unit Rate</th>
-                    <th className="py-3 px-4 text-right">Total Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {invoice.items.map((item, index) => (
-                    <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                      <td className="py-3 px-3 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">{item.description}</td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-100 text-slate-600 border border-slate-200">
-                          {item.type}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-800">{item.quantity}</td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-700">
-                        {formatPaiseToINR(item.unitPricePaise)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
-                        {formatPaiseToINR(item.totalPaise)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Summary, UPI QR & Math Breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start mb-6">
-              {/* Dynamic Live UPI QR Box (Left 5 Cols) */}
-              <div className="sm:col-span-5 bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center gap-3.5">
-                <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-2xs shrink-0">
-                  <img src={qrCodeImgSrc} alt="UPI Payment QR" className="w-24 h-24 object-contain" />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                    <QrCode className="w-3.5 h-3.5 text-brand-orange" />
-                    Instant UPI QR
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-800">Scan via GPay / PhonePe / Paytm</div>
-                  <p className="text-[10px] text-slate-500 leading-snug">
-                    VPA: <strong className="font-mono text-slate-700 font-semibold">{upiPayee}</strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Totals Summary Box (Right 7 Cols) */}
-              <div className="sm:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
-                <div className="flex justify-between py-1 text-slate-600 border-b border-slate-100">
-                  <span>Subtotal:</span>
-                  <span className="font-mono font-medium text-slate-900">{formatPaiseToINR(invoice.subtotalPaise)}</span>
-                </div>
-
-                {invoice.discountPaise > 0 && (
-                  <div className="flex justify-between py-1 text-emerald-700 border-b border-slate-100 font-medium">
-                    <span>Discount Applied:</span>
-                    <span className="font-mono">-{formatPaiseToINR(invoice.discountPaise)}</span>
-                  </div>
-                )}
-
-                {invoice.taxPaise > 0 && (
-                  <div className="flex justify-between py-1 text-slate-600 border-b border-slate-100">
-                    <span>GST / Tax:</span>
-                    <span className="font-mono">{formatPaiseToINR(invoice.taxPaise)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between py-2 text-base font-black text-slate-900 border-b-2 border-slate-900">
-                  <span>Net Grand Total:</span>
-                  <span className="font-mono text-brand-orange">{formatPaiseToINR(invoice.totalPaise)}</span>
-                </div>
-
-                <div className="flex justify-between py-1 text-slate-700 text-xs">
-                  <span>Amount Paid:</span>
-                  <span className="font-mono font-bold text-emerald-700">
-                    {formatPaiseToINR(invoice.amountPaidPaise)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between py-1.5 text-xs font-bold bg-slate-100 px-3 rounded-xl">
-                  <span>Balance Due:</span>
-                  <span
-                    className={`font-mono font-black ${
-                      invoice.balanceDuePaise > 0 ? 'text-rose-600' : 'text-emerald-700'
-                    }`}
-                  >
-                    {formatPaiseToINR(invoice.balanceDuePaise)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Official Warranty & Policy Terms */}
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 text-[10px] text-amber-900 leading-relaxed mb-8 flex items-start gap-3">
-              <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold uppercase tracking-wider block mb-0.5">Official Warranty Policy:</span>
-                <p>
-                  1. Testing warranty of 30 days applies to eligible display and battery replacement spares.
-                  <br />
-                  2. Accessories in original sealed packaging may be exchanged within 7 days with this bill.
-                  <br />
-                  3. Physical breakage, liquid exposure, or unauthorized dismantling voids warranty.
+                <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight uppercase leading-tight">
+                  {shopName}
+                </h1>
+                <p className="text-[10px] text-slate-600 font-medium leading-snug mt-0.5 max-w-xs">
+                  {shopAddress}
                 </p>
-              </div>
-            </div>
-
-            {/* Footer & Signature Line */}
-            <div className="flex justify-between items-end pt-4 border-t border-slate-200">
-              <div>
-                <div className="text-xs font-black text-slate-900 uppercase">{shopName}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Trusted Smartphone Care & Spares &bull; Dunlop, Kolkata
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-semibold text-slate-700 mt-1">
+                  <span className="flex items-center gap-0.5">
+                    <Phone className="w-2.5 h-2.5 text-brand-orange" />
+                    {shopPhone}
+                  </span>
+                  <span>&bull;</span>
+                  <span className="text-slate-600">Contact: {ownerName}</span>
                 </div>
               </div>
-
-              <div className="text-center w-48">
-                <div className="h-12 border-b border-dashed border-slate-400 mb-1 flex items-end justify-center">
-                  <span className="text-[10px] text-slate-400 italic font-mono mb-1">{ownerName}</span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  Authorized Signatory
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ============================================================== */
-          /* 2. THERMAL POS ROLL SLIP (80mm) FORMAT                         */
-          /* ============================================================== */
-          <div className="print-thermal-content bg-white border border-slate-300 rounded-xl p-4 max-w-[340px] mx-auto shadow-md text-slate-900 font-mono text-[11px] leading-tight">
-            {/* Store Header */}
-            <div className="text-center space-y-1 border-b border-dashed border-slate-400 pb-3 mb-3">
-              <img src="/images/logo.png" alt="Logo" className="w-12 h-12 object-contain mx-auto mb-1" />
-              <div className="font-black text-sm uppercase">{shopName}</div>
-              <div className="text-[10px] text-slate-600">{shopAddress}</div>
-              <div className="text-[10px] font-bold">
-                Phone / WhatsApp: {shopPhone} ({ownerName})
-              </div>
             </div>
 
-            {/* Bill Meta */}
-            <div className="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2 text-[10px]">
-              <div className="flex justify-between">
-                <span>BILL NO:</span>
-                <span className="font-bold text-xs">{invoice.invoiceNumber}</span>
+            {/* Right: Unique Bill Badge with Barcode Visual */}
+            <div className="text-right shrink-0 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+              <div className="text-[9px] font-black uppercase tracking-wider text-brand-orange">
+                A5 Tax Invoice / Bill
               </div>
-              <div className="flex justify-between">
-                <span>DATE:</span>
-                <span>{formatDateTime(invoice.issuedAt)}</span>
+              <div className="text-base font-mono font-black text-slate-900 tracking-tight mt-0.5">
+                {invoice.invoiceNumber}
               </div>
-              <div className="flex justify-between">
-                <span>CUSTOMER:</span>
-                <span className="font-bold uppercase truncate max-w-[170px]">{invoice.customerName}</span>
+
+              {/* Simulated Barcode */}
+              <div className="flex justify-end items-center gap-0.5 py-1 my-0.5 border-y border-dashed border-slate-200">
+                <div className="w-1 h-3.5 bg-slate-800" />
+                <div className="w-0.5 h-3.5 bg-slate-800" />
+                <div className="w-1.5 h-3.5 bg-slate-800" />
+                <div className="w-0.5 h-3.5 bg-slate-800" />
+                <div className="w-2 h-3.5 bg-slate-800" />
+                <div className="w-1 h-3.5 bg-slate-800" />
+                <div className="w-0.5 h-3.5 bg-slate-800" />
+                <div className="w-1.5 h-3.5 bg-slate-800" />
+                <div className="w-1 h-3.5 bg-slate-800" />
+                <div className="w-0.5 h-3.5 bg-slate-800" />
+                <div className="w-1.5 h-3.5 bg-slate-800" />
               </div>
-              <div className="flex justify-between">
-                <span>PHONE:</span>
-                <span>{formatPhoneNumber(invoice.customerPhone)}</span>
+
+              <div className="text-[10px] text-slate-600 font-medium">
+                {formatDateTime(invoice.issuedAt)}
               </div>
               {invoice.jobNumber && (
-                <div className="flex justify-between">
-                  <span>JOB REF:</span>
-                  <span className="font-bold">{invoice.jobNumber}</span>
+                <div className="text-[10px] text-slate-700 font-mono mt-0.5">
+                  Job Ref: <strong className="text-slate-900">{invoice.jobNumber}</strong>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Customer & Settlement Bar */}
+          <div className="grid grid-cols-2 gap-3 bg-slate-50/90 p-2.5 rounded-xl border border-slate-200 mb-3 text-xs">
+            <div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                Billed To Customer
+              </span>
+              <div className="text-xs font-black text-slate-900 mt-0.5">
+                {invoice.customerName}
+              </div>
+              <div className="text-[10px] font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
+                <Smartphone className="w-3 h-3 text-slate-400" />
+                {formatPhoneNumber(invoice.customerPhone)}
+              </div>
+              {invoice.notes && (
+                <div className="text-[9px] text-slate-500 italic mt-0.5">
+                  Note: &ldquo;{invoice.notes}&rdquo;
                 </div>
               )}
             </div>
 
-            {/* Items Table */}
-            <table className="w-full text-left border-collapse mb-2 text-[10px]">
+            <div className="text-right flex flex-col items-end justify-center">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                Payment Status
+              </span>
+              <div>
+                {isPaidInFull ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[10px] uppercase">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Paid in Full
+                  </span>
+                ) : isPartial ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] uppercase">
+                    <AlertCircle className="w-3 h-3 text-amber-600" />
+                    Partially Paid
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-bold text-[10px] uppercase">
+                    <AlertCircle className="w-3 h-3 text-rose-600" />
+                    Payment Due
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-0.5">
+                Mode: <strong className="text-slate-800 capitalize">{invoice.paymentMethod || 'Cash'}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Itemized Products & Services Table */}
+          <div className="overflow-hidden rounded-xl border border-slate-200 mb-3">
+            <table className="w-full text-left text-[11px] border-collapse">
               <thead>
-                <tr className="border-b border-slate-400">
-                  <th className="py-1">ITEM</th>
-                  <th className="py-1 text-center">QTY</th>
-                  <th className="py-1 text-right">AMT</th>
+                <tr className="bg-slate-900 text-white uppercase text-[9px] font-bold tracking-wider">
+                  <th className="py-1.5 px-2 w-8 text-center">#</th>
+                  <th className="py-1.5 px-2">Description</th>
+                  <th className="py-1.5 px-2 text-center w-16">Type</th>
+                  <th className="py-1.5 px-2 text-center w-10">Qty</th>
+                  <th className="py-1.5 px-2 text-right w-20">Rate</th>
+                  <th className="py-1.5 px-2 text-right w-24">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-dotted divide-slate-300">
-                {invoice.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-1 pr-1">
-                      <div className="font-bold">{item.description}</div>
-                      <div className="text-[9px] text-slate-500">@{formatPaiseToINR(item.unitPricePaise)}</div>
+              <tbody className="divide-y divide-slate-100">
+                {invoice.items.map((item, index) => (
+                  <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
+                    <td className="py-1.5 px-2 text-center text-slate-400 font-mono text-[10px]">{index + 1}</td>
+                    <td className="py-1.5 px-2 font-semibold text-slate-900">{item.description}</td>
+                    <td className="py-1.5 px-2 text-center">
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                        {item.type}
+                      </span>
                     </td>
-                    <td className="py-1 text-center font-bold">{item.quantity}</td>
-                    <td className="py-1 text-right font-bold">{formatPaiseToINR(item.totalPaise)}</td>
+                    <td className="py-1.5 px-2 text-center font-bold text-slate-800">{item.quantity}</td>
+                    <td className="py-1.5 px-2 text-right font-mono text-slate-700">
+                      {formatPaiseToINR(item.unitPricePaise)}
+                    </td>
+                    <td className="py-1.5 px-2 text-right font-mono font-bold text-slate-900">
+                      {formatPaiseToINR(item.totalPaise)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
 
-            {/* Financials Breakdown */}
-            <div className="border-t border-dashed border-slate-400 pt-2 space-y-1 text-[11px]">
-              <div className="flex justify-between">
+          {/* Bottom Section: UPI QR & Financials Breakdown */}
+          <div className="grid grid-cols-12 gap-3 items-start mb-3">
+            {/* Live UPI QR Box */}
+            <div className="col-span-5 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center gap-2.5">
+              <img
+                src={qrCodeImgSrc}
+                alt="UPI Payment QR"
+                className="w-16 h-16 object-contain rounded-lg bg-white p-1 border border-slate-200 shrink-0 shadow-2xs"
+              />
+              <div className="space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <QrCode className="w-3 h-3 text-brand-orange" />
+                  Instant UPI
+                </div>
+                <div className="text-[10px] font-bold text-slate-800 leading-tight">GPay &bull; PhonePe &bull; Paytm</div>
+                <p className="text-[9px] text-slate-600 font-mono font-semibold break-all">
+                  {upiPayee}
+                </p>
+              </div>
+            </div>
+
+            {/* Totals Summary Box */}
+            <div className="col-span-7 bg-white p-2.5 rounded-xl border border-slate-200 space-y-1 text-xs">
+              <div className="flex justify-between text-slate-600 text-[11px]">
                 <span>Subtotal:</span>
-                <span>{formatPaiseToINR(invoice.subtotalPaise)}</span>
+                <span className="font-mono font-medium text-slate-900">{formatPaiseToINR(invoice.subtotalPaise)}</span>
               </div>
+
               {invoice.discountPaise > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>Discount:</span>
-                  <span>-{formatPaiseToINR(invoice.discountPaise)}</span>
+                <div className="flex justify-between text-emerald-700 font-medium text-[11px]">
+                  <span>Discount Applied:</span>
+                  <span className="font-mono">-{formatPaiseToINR(invoice.discountPaise)}</span>
                 </div>
               )}
+
               {invoice.taxPaise > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>Tax/GST:</span>
-                  <span>{formatPaiseToINR(invoice.taxPaise)}</span>
+                <div className="flex justify-between text-slate-600 text-[11px]">
+                  <span>GST / Tax:</span>
+                  <span className="font-mono">{formatPaiseToINR(invoice.taxPaise)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-black text-sm border-t border-b border-slate-800 py-1">
-                <span>TOTAL:</span>
-                <span>{formatPaiseToINR(invoice.totalPaise)}</span>
+
+              <div className="flex justify-between py-1 text-sm font-black text-slate-900 border-t border-b border-slate-900">
+                <span>Net Total:</span>
+                <span className="font-mono text-brand-orange">{formatPaiseToINR(invoice.totalPaise)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>PAID:</span>
-                <span className="font-bold">{formatPaiseToINR(invoice.amountPaidPaise)}</span>
+
+              <div className="flex justify-between text-[11px] text-slate-700">
+                <span>Amount Paid:</span>
+                <span className="font-mono font-bold text-emerald-700">
+                  {formatPaiseToINR(invoice.amountPaidPaise)}
+                </span>
               </div>
-              <div className="flex justify-between font-bold">
-                <span>BALANCE DUE:</span>
-                <span className={invoice.balanceDuePaise > 0 ? 'text-rose-600' : 'text-emerald-700'}>
+
+              <div className="flex justify-between text-[11px] font-bold bg-slate-100 px-2 py-0.5 rounded-lg">
+                <span>Balance Due:</span>
+                <span
+                  className={`font-mono font-black ${
+                    invoice.balanceDuePaise > 0 ? 'text-rose-600' : 'text-emerald-700'
+                  }`}
+                >
                   {formatPaiseToINR(invoice.balanceDuePaise)}
                 </span>
               </div>
             </div>
+          </div>
 
-            {/* UPI QR & Barcode */}
-            <div className="my-3 text-center border-t border-dashed border-slate-400 pt-2">
-              <img src={qrCodeImgSrc} alt="UPI QR" className="w-20 h-20 mx-auto object-contain mb-1" />
-              <div className="text-[9px] text-slate-500 font-sans">Scan to Pay via UPI ({upiPayee})</div>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center text-[9px] text-slate-600 pt-1 border-t border-dashed border-slate-400 space-y-1">
-              <div className="font-bold uppercase text-[10px] text-slate-800">*** THANK YOU FOR VISITING ***</div>
-              <div>{shopName}</div>
-              <div>Goods exchangeable within 7 days with bill</div>
+          {/* Official Warranty & Policy Terms */}
+          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2 text-[9px] text-amber-900 leading-snug mb-3 flex items-start gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold uppercase tracking-wider block mb-0.5">Warranty & Service Policy:</span>
+              <p>
+                1. 30 days testing warranty applies to eligible replacement displays and batteries. &bull; 2. Accessories exchangeable within 7 days in original pack with this bill. &bull; 3. Physical breakage or liquid exposure voids warranty.
+              </p>
             </div>
           </div>
-        )}
+
+          {/* Footer & Signature Line */}
+          <div className="flex justify-between items-end pt-2 border-t border-slate-200 text-[10px]">
+            <div>
+              <div className="font-black text-slate-900 uppercase">{shopName}</div>
+              <div className="text-slate-500 text-[9px]">
+                Trusted Smartphone Care &bull; Dunlop, Kolkata 700108
+              </div>
+            </div>
+
+            <div className="text-center w-36">
+              <div className="h-8 border-b border-dashed border-slate-400 mb-0.5 flex items-end justify-center">
+                <span className="text-[9px] text-slate-400 italic font-mono">{ownerName}</span>
+              </div>
+              <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">
+                Authorized Signatory
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
