@@ -513,6 +513,7 @@ export const CounterBillingPage: React.FC = () => {
     try {
       const lineItems: InvoiceLineItem[] = cart.map((c) => ({
         id: c.id,
+        productId: c.productId,
         description: c.description,
         type: c.type,
         quantity: c.quantity,

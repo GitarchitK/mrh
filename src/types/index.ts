@@ -243,6 +243,7 @@ export interface Estimate {
 
 export interface InvoiceLineItem {
   id: string;
+  productId?: string;
   description: string;
   type: 'part' | 'labour' | 'accessory' | 'other';
   quantity: number;

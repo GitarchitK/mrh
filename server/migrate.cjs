@@ -150,6 +150,8 @@ async function migrate() {
         amount_paid_paise BIGINT NOT NULL DEFAULT 0,
         balance_due_paise BIGINT NOT NULL DEFAULT 0,
         status VARCHAR NOT NULL DEFAULT 'draft',
+        bill_type VARCHAR DEFAULT 'counter_bill',
+        payment_method VARCHAR DEFAULT 'cash',
         issued_at TIMESTAMPTZ DEFAULT NOW(),
         due_date TIMESTAMPTZ,
         notes TEXT,

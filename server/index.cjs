@@ -140,6 +140,8 @@ function mapInvoice(row) {
     amountPaidPaise: Number(row.amount_paid_paise || 0),
     balanceDuePaise: Number(row.balance_due_paise || 0),
     status: row.status,
+    billType: row.bill_type || 'counter_bill',
+    paymentMethod: row.payment_method || 'cash',
     issuedAt: row.issued_at ? new Date(row.issued_at).toISOString() : new Date().toISOString(),
     dueDate: row.due_date ? new Date(row.due_date).toISOString() : undefined,
     notes: row.notes,
@@ -910,41 +912,115 @@ app.post('/api/invoices', async (req, res) => {
     const amountPaidPaise = Number(inv.amountPaidPaise || 0);
     const balanceDuePaise = totalPaise - amountPaidPaise;
     const status = balanceDuePaise <= 0 ? 'paid' : amountPaidPaise > 0 ? 'partial' : 'unpaid';
+    const billType = inv.billType || (invoiceNumber.startsWith('BILL-') ? 'counter_bill' : 'repair_invoice');
+    const paymentMethod = inv.paymentMethod || 'cash';
 
+    // 1. Resolve or Auto-Create Customer in mrh_customers
+    let customerId = inv.customerId;
+    const cleanPhone = (inv.customerPhone || '').replace(/\D/g, '');
+    if (!customerId || customerId === 'cust_walkin' || customerId === 'cust_temp') {
+      if (cleanPhone.length >= 10) {
+        const last10 = cleanPhone.slice(-10);
+        const custRes = await pool.query(
+          'SELECT id, outstanding_balance FROM mrh_customers WHERE normalized_phone LIKE $1 OR phone LIKE $1 LIMIT 1;',
+          [`%${last10}%`]
+        );
+        if (custRes.rows.length > 0) {
+          customerId = custRes.rows[0].id;
+          if (balanceDuePaise > 0) {
+            await pool.query(
+              'UPDATE mrh_customers SET outstanding_balance = COALESCE(outstanding_balance, 0) + $1, updated_at = NOW() WHERE id = $2;',
+              [balanceDuePaise / 100, customerId]
+            ).catch(() => {});
+          }
+        } else if (inv.customerName && inv.customerName !== 'Walk-in Customer') {
+          const newCustId = `cust_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          const ledgerCode = `CUST-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          await pool.query(`
+            INSERT INTO mrh_customers (
+              id, ledger_code, full_name, phone, normalized_phone, status,
+              opening_balance, outstanding_balance, loyalty_points, created_by, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, 'active', 0, $6, $7, $8, NOW(), NOW());
+          `, [
+            newCustId, ledgerCode, inv.customerName.trim(), inv.customerPhone.trim(),
+            cleanPhone, balanceDuePaise / 100, Math.floor(amountPaidPaise / 10000), inv.createdBy || 'counter'
+          ]).catch(() => {});
+          customerId = newCustId;
+        }
+      }
+    }
+
+    // 2. Insert Invoice / Bill into mrh_invoices
     const result = await pool.query(`
       INSERT INTO mrh_invoices (
         id, invoice_number, repair_job_id, job_number, customer_id, customer_name,
         customer_phone, items, subtotal_paise, discount_paise, tax_paise, total_paise,
-        amount_paid_paise, balance_due_paise, status, issued_at, notes, created_by,
-        created_at, updated_at
+        amount_paid_paise, balance_due_paise, status, bill_type, payment_method,
+        issued_at, notes, created_by, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), $16, $17, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), $18, $19, NOW(), NOW()
       ) RETURNING *;
     `, [
-      id, invoiceNumber, inv.repairJobId, inv.jobNumber, inv.customerId, inv.customerName,
+      id, invoiceNumber, inv.repairJobId || null, inv.jobNumber || null, customerId || 'cust_walkin', inv.customerName,
       inv.customerPhone, JSON.stringify(inv.items || []), inv.subtotalPaise || 0, inv.discountPaise || 0,
-      inv.taxPaise || 0, totalPaise, amountPaidPaise, balanceDuePaise, status, inv.notes || null, inv.createdBy || 'counter'
+      inv.taxPaise || 0, totalPaise, amountPaidPaise, balanceDuePaise, status, billType, paymentMethod,
+      inv.notes || null, inv.createdBy || 'counter'
     ]);
 
+    // 3. Link Repair Job if applicable
     if (inv.repairJobId) {
-      await pool.query('UPDATE mrh_repairs SET invoice_id = $1 WHERE id = $2;', [id, inv.repairJobId]);
+      await pool.query('UPDATE mrh_repairs SET invoice_id = $1, updated_at = NOW() WHERE id = $2;', [id, inv.repairJobId]).catch(() => {});
     }
 
-    // Auto-record payment if amount paid > 0 to keep Payments Ledger in sync
+    // 4. Auto-deduct inventory stock and record movements for billed parts & accessories
+    if (Array.isArray(inv.items)) {
+      for (const item of inv.items) {
+        try {
+          const qty = Math.max(1, Number(item.quantity || 1));
+          const invRes = item.productId
+            ? await pool.query('SELECT id, name, sku, quantity_available FROM mrh_inventory WHERE id = $1;', [item.productId])
+            : await pool.query('SELECT id, name, sku, quantity_available FROM mrh_inventory WHERE LOWER(name) = LOWER($1) LIMIT 1;', [item.description]);
+
+          if (invRes.rows.length > 0) {
+            const prod = invRes.rows[0];
+            const prevQty = Number(prod.quantity_available || 0);
+            const newQty = Math.max(0, prevQty - qty);
+
+            await pool.query('UPDATE mrh_inventory SET quantity_available = $1, updated_at = NOW() WHERE id = $2;', [newQty, prod.id]);
+
+            const movId = `mov_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+            await pool.query(`
+              INSERT INTO mrh_inventory_movements (
+                id, product_id, product_name, sku, type, quantity_delta, previous_quantity,
+                new_quantity, reference_id, notes, performed_by, created_at
+              ) VALUES ($1, $2, $3, $4, 'sale', $5, $6, $7, $8, $9, $10, NOW());
+            `, [
+              movId, prod.id, prod.name, prod.sku, -qty, prevQty, newQty,
+              invoiceNumber, `POS Sale (${invoiceNumber})`, inv.createdBy || 'counter'
+            ]);
+          }
+        } catch (itemErr) {
+          console.warn('Inventory deduction warning for item:', item.description, itemErr.message);
+        }
+      }
+    }
+
+    // 5. Auto-record payment in mrh_payments ledger
     if (amountPaidPaise > 0) {
       const payId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const cPay = await pool.query('SELECT count(*) FROM mrh_payments;');
       const paymentRef = `PAY-${new Date().getFullYear()}-${(Number(cPay.rows[0].count) + 1).toString().padStart(4, '0')}`;
-      const method = inv.paymentMethod || 'cash';
+      const method = paymentMethod === 'upi' ? 'upi' : paymentMethod === 'card' ? 'other' : 'cash';
+
       await pool.query(`
         INSERT INTO mrh_payments (
           id, payment_reference, invoice_id, repair_job_id, customer_id, customer_name,
           amount_paise, method, external_reference, notes, recorded_by, recorded_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW());
       `, [
-        payId, paymentRef, id, inv.repairJobId || null, inv.customerId || 'cust_temp', inv.customerName,
+        payId, paymentRef, id, inv.repairJobId || null, customerId || 'cust_walkin', inv.customerName,
         amountPaidPaise, method, inv.paymentReference || null,
-        `Payment collected during counter billing (${invoiceNumber})`, inv.createdBy || 'counter'
+        `POS Counter settlement (${invoiceNumber}) via ${method.toUpperCase()}`, inv.createdBy || 'counter'
       ]).catch(e => console.warn('Auto payment insert failed:', e.message));
     }
 
