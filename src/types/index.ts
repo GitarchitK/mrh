@@ -252,7 +252,9 @@ export interface InvoiceLineItem {
 
 export interface Invoice {
   id: string;
-  invoiceNumber: string; // e.g. INV-2026-0001
+  invoiceNumber: string; // e.g. INV-2026-0001 or BILL-2026-0001
+  paymentMethod?: string;
+  billType?: 'counter_bill' | 'repair_invoice';
   repairJobId?: string;
   jobNumber?: string;
   customerId: string;

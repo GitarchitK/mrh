@@ -40,6 +40,7 @@ import { RepairIntakePage } from './pages/admin/RepairIntakePage';
 import { RepairDetailPage } from './pages/admin/RepairDetailPage';
 import { EstimatesPage } from './pages/admin/EstimatesPage';
 import { InvoicesPage } from './pages/admin/InvoicesPage';
+import { CounterBillingPage } from './pages/admin/CounterBillingPage';
 import { PaymentsPage } from './pages/admin/PaymentsPage';
 import { InventoryPage } from './pages/admin/InventoryPage';
 import { WarrantiesPage } from './pages/admin/WarrantiesPage';
@@ -108,6 +109,8 @@ export const App: React.FC = () => {
                 <Route path="repairs/new" element={<RepairIntakePage />} />
                 <Route path="repairs/:repairId" element={<RepairDetailPage />} />
                 <Route path="estimates" element={<EstimatesPage />} />
+                <Route path="billing" element={<CounterBillingPage />} />
+                <Route path="counter-billing" element={<CounterBillingPage />} />
                 <Route path="invoices" element={<InvoicesPage />} />
                 <Route path="payments" element={<PaymentsPage />} />
                 <Route path="inventory" element={<InventoryPage />} />

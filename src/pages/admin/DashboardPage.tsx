@@ -9,6 +9,7 @@ import {
   Clock,
   CheckCircle2,
   PlusCircle,
+  Receipt,
   FileText,
   ArrowRight,
   TrendingUp,
@@ -169,8 +170,14 @@ export const DashboardPage: React.FC = () => {
             ))}
           </div>
 
+          <Link to="/admin/billing">
+            <Button size="sm" variant="glow" leftIcon={<Receipt className="w-3.5 h-3.5" />}>
+              Make Bill
+            </Button>
+          </Link>
+
           <Link to="/admin/repairs/new">
-            <Button size="sm" variant="glow" leftIcon={<PlusCircle className="w-3.5 h-3.5" />}>
+            <Button size="sm" variant="outline" leftIcon={<PlusCircle className="w-3.5 h-3.5 text-brand-orange" />}>
               New Intake
             </Button>
           </Link>

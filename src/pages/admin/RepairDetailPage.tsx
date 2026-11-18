@@ -535,11 +535,11 @@ export const RepairDetailPage: React.FC = () => {
               <div className="space-y-3 text-center py-2">
                 <p className="text-brand-secondary">No final invoice billed yet.</p>
                 <Link
-                  to={`/admin/invoices?newForJob=${job.id}&name=${encodeURIComponent(job.customerName)}&phone=${encodeURIComponent(job.customerPhone)}&jobNumber=${job.jobNumber}&custId=${job.customerId}`}
+                  to={`/admin/billing?jobId=${job.id}&name=${encodeURIComponent(job.customerName)}&phone=${encodeURIComponent(job.customerPhone)}&jobNumber=${job.jobNumber}&custId=${job.customerId}`}
                   className="block w-full"
                 >
-                  <Button size="sm" variant="primary" className="w-full" leftIcon={<FileText className="w-3.5 h-3.5" />}>
-                    Generate Invoice
+                  <Button size="sm" variant="glow" className="w-full" leftIcon={<FileText className="w-3.5 h-3.5" />}>
+                    Generate Bill & Receipt
                   </Button>
                 </Link>
               </div>

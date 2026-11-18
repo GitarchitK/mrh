@@ -898,6 +898,12 @@ app.post('/api/invoices', async (req, res) => {
     if (!invoiceNumber) {
       const c = await pool.query('SELECT count(*) FROM mrh_invoices;');
       invoiceNumber = `INV-${new Date().getFullYear()}-${(Number(c.rows[0].count) + 1).toString().padStart(4, '0')}`;
+    } else {
+      // Ensure bill/invoice number uniqueness in database
+      const existing = await pool.query('SELECT id FROM mrh_invoices WHERE invoice_number = $1;', [invoiceNumber]);
+      if (existing.rows.length > 0) {
+        invoiceNumber = `${invoiceNumber}-${Math.floor(100 + Math.random() * 900)}`;
+      }
     }
 
     const totalPaise = Number(inv.totalPaise || 0);
@@ -922,6 +928,24 @@ app.post('/api/invoices', async (req, res) => {
 
     if (inv.repairJobId) {
       await pool.query('UPDATE mrh_repairs SET invoice_id = $1 WHERE id = $2;', [id, inv.repairJobId]);
+    }
+
+    // Auto-record payment if amount paid > 0 to keep Payments Ledger in sync
+    if (amountPaidPaise > 0) {
+      const payId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const cPay = await pool.query('SELECT count(*) FROM mrh_payments;');
+      const paymentRef = `PAY-${new Date().getFullYear()}-${(Number(cPay.rows[0].count) + 1).toString().padStart(4, '0')}`;
+      const method = inv.paymentMethod || 'cash';
+      await pool.query(`
+        INSERT INTO mrh_payments (
+          id, payment_reference, invoice_id, repair_job_id, customer_id, customer_name,
+          amount_paise, method, external_reference, notes, recorded_by, recorded_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW());
+      `, [
+        payId, paymentRef, id, inv.repairJobId || null, inv.customerId || 'cust_temp', inv.customerName,
+        amountPaidPaise, method, inv.paymentReference || null,
+        `Payment collected during counter billing (${invoiceNumber})`, inv.createdBy || 'counter'
+      ]).catch(e => console.warn('Auto payment insert failed:', e.message));
     }
 
     res.status(201).json(mapInvoice(result.rows[0]));

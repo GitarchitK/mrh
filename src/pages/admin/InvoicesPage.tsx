@@ -11,6 +11,8 @@ import {
   Trash2,
   Mic,
   Sparkles,
+  Receipt,
+  MessageSquare,
 } from 'lucide-react';
 import {
   getInvoices,
@@ -23,7 +25,7 @@ import { StatusBadge } from '../../components/shared/StatusBadge';
 import { Button } from '../../components/ui/Button';
 import { Input, Textarea, Select } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
-import { InvoicePrint } from '../../components/print/InvoicePrint';
+import { CounterBillPrint } from '../../components/print/CounterBillPrint';
 import { useAuth } from '../../context/AuthContext';
 import { useVoice } from '../../context/VoiceContext';
 import { SUPPORTED_VOICE_LANGUAGES } from '../../services/speechService';
@@ -49,6 +51,7 @@ export const InvoicesPage: React.FC = () => {
   const [settings, setSettings] = useState<BusinessSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [billTypeTab, setBillTypeTab] = useState<'all' | 'counter' | 'repair' | 'unpaid'>('all');
   const [createModalOpen, setCreateModalOpen] = useState(Boolean(newForJob));
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
 
@@ -197,53 +200,121 @@ export const InvoicesPage: React.FC = () => {
     }
   };
 
-  const filtered = invoices.filter(
-    (inv) =>
+  const filtered = invoices.filter((inv) => {
+    // Search filter
+    const matchesSearch =
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
       (inv.jobNumber && inv.jobNumber.toLowerCase().includes(search.toLowerCase())) ||
       inv.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customerPhone.includes(search)
-  );
+      inv.customerPhone.includes(search);
+    if (!matchesSearch) return false;
+
+    // Tab filter
+    if (billTypeTab === 'counter') {
+      return inv.invoiceNumber.startsWith('BILL-') || !inv.repairJobId;
+    }
+    if (billTypeTab === 'repair') {
+      return Boolean(inv.repairJobId) || inv.invoiceNumber.startsWith('INV-');
+    }
+    if (billTypeTab === 'unpaid') {
+      return inv.balanceDuePaise > 0;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-brand-navy tracking-tight">
-            Invoices & Billing
+          <h1 className="text-2xl font-black text-brand-navy tracking-tight flex items-center gap-2">
+            <Receipt className="w-6 h-6 text-brand-orange" />
+            Bills & Invoices
           </h1>
           <p className="text-xs text-brand-secondary mt-0.5">
-            Issue customer repair invoices, track outstanding balances, and print payment receipts.
+            Manage in-counter retail bills, workshop repair invoices, track outstanding balances, and print receipts.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/admin/billing">
+            <Button size="sm" variant="glow" leftIcon={<Receipt className="w-3.5 h-3.5" />}>
+              New Counter Bill (+)
+            </Button>
+          </Link>
           <Button
             size="sm"
             variant="outline"
             leftIcon={<Mic className="w-3.5 h-3.5 text-brand-orange" />}
             onClick={() => openAssistant('billing')}
           >
-            <span>Voice Bill Entry ({currentVoiceLang.nativeLabel})</span>
+            <span>Voice Bill ({currentVoiceLang.nativeLabel})</span>
           </Button>
           <Button
             size="sm"
-            variant="primary"
+            variant="outline"
             leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
             onClick={() => setCreateModalOpen(true)}
           >
-            Generate Invoice
+            Custom Invoice
           </Button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white p-4 rounded-2xl border border-brand-border shadow-xs">
+      {/* Search & Tab Filters */}
+      <div className="bg-white p-4 rounded-2xl border border-brand-border shadow-xs space-y-3">
         <Input
-          placeholder="Search by invoice number, job reference, or customer name..."
+          placeholder="Search by bill number (BILL-...), invoice number (INV-...), job reference, or customer name..."
           enableVoice
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+
+        {/* Tab Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setBillTypeTab('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              billTypeTab === 'all'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All Bills & Invoices ({invoices.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillTypeTab('counter')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              billTypeTab === 'counter'
+                ? 'bg-brand-orange text-white shadow-glow-orange'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            In-Counter Bills
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillTypeTab('repair')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              billTypeTab === 'repair'
+                ? 'bg-brand-navy text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Repair Invoices
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillTypeTab('unpaid')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              billTypeTab === 'unpaid'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Unpaid / Balance Due ({invoices.filter((i) => i.balanceDuePaise > 0).length})
+          </button>
+        </div>
       </div>
 
       {/* Invoice List */}
@@ -512,17 +583,21 @@ export const InvoicesPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Print Invoice Modal */}
+      {/* Print Bill / Invoice Modal */}
       {printInvoice && settings && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4 flex items-center justify-center">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl">
-            <InvoicePrint
-              invoice={printInvoice}
-              settings={settings}
-              onClose={() => setPrintInvoice(null)}
-            />
-          </div>
-        </div>
+        <Modal
+          isOpen={Boolean(printInvoice)}
+          onClose={() => setPrintInvoice(null)}
+          title="Official Receipt & Tax Invoice"
+          description={`Bill No: ${printInvoice.invoiceNumber}`}
+          maxWidth="4xl"
+        >
+          <CounterBillPrint
+            invoice={printInvoice}
+            settings={settings}
+            onClose={() => setPrintInvoice(null)}
+          />
+        </Modal>
       )}
     </div>
   );

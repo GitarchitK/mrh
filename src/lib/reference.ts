@@ -41,6 +41,19 @@ export function generateInvoiceNumber(): string {
   return `INV-${year}-${randomNum}`;
 }
 
+export function generateBillNumber(existingList?: { invoiceNumber?: string }[]): string {
+  const year = new Date().getFullYear();
+  const existingSet = new Set(existingList?.map(i => i.invoiceNumber).filter(Boolean) || []);
+  let candidate = '';
+  let attempts = 0;
+  do {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    candidate = `BILL-${year}-${randomNum}`;
+    attempts++;
+  } while (existingSet.has(candidate) && attempts < 100);
+  return candidate;
+}
+
 export function generatePaymentReference(): string {
   const year = new Date().getFullYear();
   const randomNum = Math.floor(10000 + Math.random() * 90000);
