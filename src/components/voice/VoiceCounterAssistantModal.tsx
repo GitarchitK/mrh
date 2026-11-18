@@ -161,8 +161,8 @@ export const VoiceCounterAssistantModal: React.FC = () => {
 
   const handleApplyToForm = () => {
     if (assistantMode === 'jobsheet') {
-      if (onApplyJobsheetData && parsedJobsheet) {
-        onApplyJobsheetData(parsedJobsheet);
+      const applied = onApplyJobsheetData && parsedJobsheet ? onApplyJobsheetData(parsedJobsheet) : false;
+      if (applied) {
         closeAssistant();
       } else {
         // Navigate to Repair Intake with query params
@@ -177,16 +177,16 @@ export const VoiceCounterAssistantModal: React.FC = () => {
         navigate(`/admin/repairs/new?${params.toString()}`);
       }
     } else if (assistantMode === 'inventory') {
-      if (onApplyStockData && parsedStock) {
-        onApplyStockData(parsedStock);
+      const applied = onApplyStockData && parsedStock ? onApplyStockData(parsedStock) : false;
+      if (applied) {
         closeAssistant();
       } else {
         closeAssistant();
         navigate('/admin/inventory');
       }
     } else if (assistantMode === 'billing') {
-      if (onApplyInvoiceData && parsedInvoice) {
-        onApplyInvoiceData(parsedInvoice);
+      const applied = onApplyInvoiceData && parsedInvoice ? onApplyInvoiceData(parsedInvoice) : false;
+      if (applied) {
         closeAssistant();
       } else {
         const params = new URLSearchParams();

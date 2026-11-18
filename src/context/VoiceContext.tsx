@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { VoiceLanguage, SUPPORTED_VOICE_LANGUAGES } from '../services/speechService';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react';
+import { VoiceLanguage } from '../services/speechService';
 import { ParsedJobsheetData, ParsedStockData, ParsedInvoiceData } from '../services/voiceFormParser';
 
 export type VoiceAssistantMode = 'jobsheet' | 'inventory' | 'billing' | 'dictation';
@@ -12,15 +12,15 @@ interface VoiceContextType {
   closeAssistant: () => void;
   assistantMode: VoiceAssistantMode;
   setAssistantMode: (mode: VoiceAssistantMode) => void;
-  
+
   // Registration and event dispatch for active pages to receive filled data
-  onApplyJobsheetData?: (data: ParsedJobsheetData) => void;
+  onApplyJobsheetData?: (data: ParsedJobsheetData) => boolean;
   registerJobsheetHandler: (handler: (data: ParsedJobsheetData) => void) => () => void;
-  
-  onApplyStockData?: (data: ParsedStockData) => void;
+
+  onApplyStockData?: (data: ParsedStockData) => boolean;
   registerStockHandler: (handler: (data: ParsedStockData) => void) => () => void;
 
-  onApplyInvoiceData?: (data: ParsedInvoiceData) => void;
+  onApplyInvoiceData?: (data: ParsedInvoiceData) => boolean;
   registerInvoiceHandler: (handler: (data: ParsedInvoiceData) => void) => () => void;
 }
 
@@ -44,65 +44,113 @@ export const VoiceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [assistantMode, setAssistantMode] = useState<VoiceAssistantMode>('jobsheet');
 
-  // Page handlers registry
-  const [jobsheetHandler, setJobsheetHandler] = useState<((data: ParsedJobsheetData) => void) | null>(null);
-  const [stockHandler, setStockHandler] = useState<((data: ParsedStockData) => void) | null>(null);
-  const [invoiceHandler, setInvoiceHandler] = useState<((data: ParsedInvoiceData) => void) | null>(null);
+  // Page handlers registry using stable refs to prevent re-render cascading
+  const jobsheetHandlerRef = useRef<((data: ParsedJobsheetData) => void) | null>(null);
+  const stockHandlerRef = useRef<((data: ParsedStockData) => void) | null>(null);
+  const invoiceHandlerRef = useRef<((data: ParsedInvoiceData) => void) | null>(null);
 
-  const setActiveLanguage = (lang: VoiceLanguage) => {
+  const setActiveLanguage = useCallback((lang: VoiceLanguage) => {
     setActiveLanguageState(lang);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, lang);
     } catch (e) {
       // Ignored
     }
-  };
+  }, []);
 
-  const openAssistant = (mode: VoiceAssistantMode = 'jobsheet') => {
+  const openAssistant = useCallback((mode: VoiceAssistantMode = 'jobsheet') => {
     setAssistantMode(mode);
     setIsAssistantOpen(true);
-  };
+  }, []);
 
-  const closeAssistant = () => {
+  const closeAssistant = useCallback(() => {
     setIsAssistantOpen(false);
-  };
+  }, []);
 
-  const registerJobsheetHandler = (handler: (data: ParsedJobsheetData) => void) => {
-    setJobsheetHandler(() => handler);
-    return () => setJobsheetHandler(null);
-  };
+  const registerJobsheetHandler = useCallback((handler: (data: ParsedJobsheetData) => void) => {
+    jobsheetHandlerRef.current = handler;
+    return () => {
+      if (jobsheetHandlerRef.current === handler) {
+        jobsheetHandlerRef.current = null;
+      }
+    };
+  }, []);
 
-  const registerStockHandler = (handler: (data: ParsedStockData) => void) => {
-    setStockHandler(() => handler);
-    return () => setStockHandler(null);
-  };
+  const registerStockHandler = useCallback((handler: (data: ParsedStockData) => void) => {
+    stockHandlerRef.current = handler;
+    return () => {
+      if (stockHandlerRef.current === handler) {
+        stockHandlerRef.current = null;
+      }
+    };
+  }, []);
 
-  const registerInvoiceHandler = (handler: (data: ParsedInvoiceData) => void) => {
-    setInvoiceHandler(() => handler);
-    return () => setInvoiceHandler(null);
-  };
+  const registerInvoiceHandler = useCallback((handler: (data: ParsedInvoiceData) => void) => {
+    invoiceHandlerRef.current = handler;
+    return () => {
+      if (invoiceHandlerRef.current === handler) {
+        invoiceHandlerRef.current = null;
+      }
+    };
+  }, []);
 
-  return (
-    <VoiceContext.Provider
-      value={{
-        activeLanguage,
-        setActiveLanguage,
-        isAssistantOpen,
-        openAssistant,
-        closeAssistant,
-        assistantMode,
-        setAssistantMode,
-        onApplyJobsheetData: jobsheetHandler || undefined,
-        registerJobsheetHandler,
-        onApplyStockData: stockHandler || undefined,
-        registerStockHandler,
-        onApplyInvoiceData: invoiceHandler || undefined,
-        registerInvoiceHandler,
-      }}
-    >
-      {children}
-    </VoiceContext.Provider>
+  const onApplyJobsheetData = useCallback((data: ParsedJobsheetData): boolean => {
+    if (jobsheetHandlerRef.current) {
+      jobsheetHandlerRef.current(data);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const onApplyStockData = useCallback((data: ParsedStockData): boolean => {
+    if (stockHandlerRef.current) {
+      stockHandlerRef.current(data);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const onApplyInvoiceData = useCallback((data: ParsedInvoiceData): boolean => {
+    if (invoiceHandlerRef.current) {
+      invoiceHandlerRef.current(data);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      activeLanguage,
+      setActiveLanguage,
+      isAssistantOpen,
+      openAssistant,
+      closeAssistant,
+      assistantMode,
+      setAssistantMode,
+      onApplyJobsheetData,
+      registerJobsheetHandler,
+      onApplyStockData,
+      registerStockHandler,
+      onApplyInvoiceData,
+      registerInvoiceHandler,
+    }),
+    [
+      activeLanguage,
+      setActiveLanguage,
+      isAssistantOpen,
+      openAssistant,
+      closeAssistant,
+      assistantMode,
+      onApplyJobsheetData,
+      registerJobsheetHandler,
+      onApplyStockData,
+      registerStockHandler,
+      onApplyInvoiceData,
+      registerInvoiceHandler,
+    ]
   );
+
+  return <VoiceContext.Provider value={contextValue}>{children}</VoiceContext.Provider>;
 };
 
 export const useVoice = () => {
