@@ -68,7 +68,6 @@ import { SUPPORTED_VOICE_LANGUAGES } from '../../services/speechService';
 import { formatPaiseToINR, rupeesToPaise, calculateTotalsPaise } from '../../lib/money';
 import { formatDate, formatDateTime, formatPhoneNumber } from '../../lib/utils';
 import { generateBillNumber, generatePaymentReference } from '../../lib/reference';
-import { STORE_PRODUCTS, STORE_CATEGORIES } from '../../services/storeData';
 
 // Counter Repair Services Catalog
 const COUNTER_SERVICES = [
@@ -138,16 +137,7 @@ export const CounterBillingPage: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   // Cart & Line Items
-  const [cart, setCart] = useState<POSCartItem[]>([
-    {
-      id: 'cart-init-1',
-      description: '11D Premium Tempered Glass',
-      type: 'accessory',
-      quantity: 1,
-      unitPricePaise: 15000,
-      totalPaise: 15000,
-    },
-  ]);
+  const [cart, setCart] = useState<POSCartItem[]>([]);
 
   // Parked / Held Carts
   const [parkedCarts, setParkedCarts] = useState<ParkedCart[]>([]);
@@ -279,39 +269,23 @@ export const CounterBillingPage: React.FC = () => {
       });
     });
 
-    // 2. Add store accessories
-    STORE_PRODUCTS.forEach((prod) => {
-      list.push({
-        id: prod.id,
-        name: prod.name,
-        category: prod.category,
-        pricePaise: prod.pricePaise,
-        type: prod.category === 'spares' ? 'part' : 'accessory',
-        badge: prod.badge,
-        stock: prod.stockCount,
-        sku: prod.slug,
-      });
-    });
-
-    // 3. Add inventory from real DB if not duplicate
+    // 2. Add real inventory products from PostgreSQL database
     inventory.forEach((inv) => {
-      if (!list.some((l) => l.name.toLowerCase() === inv.name.toLowerCase())) {
-        list.push({
-          id: inv.id,
-          name: inv.name,
-          category: inv.category,
-          pricePaise: inv.sellingPricePaise,
-          type:
-            inv.category === 'displays' || inv.category === 'batteries' || inv.category === 'charging_ports'
-              ? 'part'
-              : 'accessory',
-          badge: `In Stock: ${inv.quantityAvailable}`,
-          stock: inv.quantityAvailable,
-          sku: inv.sku,
-          brand: inv.brand,
-          serialNumber: inv.serialNumber,
-        });
-      }
+      list.push({
+        id: inv.id,
+        name: inv.name,
+        category: inv.category,
+        pricePaise: inv.sellingPricePaise,
+        type:
+          inv.category === 'displays' || inv.category === 'batteries' || inv.category === 'charging_ports'
+            ? 'part'
+            : 'accessory',
+        badge: `In Stock: ${inv.quantityAvailable}`,
+        stock: inv.quantityAvailable,
+        sku: inv.sku,
+        brand: inv.brand,
+        serialNumber: inv.serialNumber,
+      });
     });
 
     return list;
@@ -322,20 +296,20 @@ export const CounterBillingPage: React.FC = () => {
     return allPOSProducts.filter((item) => {
       if (selectedCategory === 'popular') {
         const isPopular =
-          item.badge === 'Best Seller' ||
-          item.badge === 'Quick Service' ||
-          item.badge === 'Quick Fix' ||
-          item.name.includes('Tempered') ||
-          item.name.includes('Charger') ||
-          item.name.includes('Cable');
+          item.category === 'services' ||
+          item.name.toLowerCase().includes('tempered') ||
+          item.name.toLowerCase().includes('charger') ||
+          item.name.toLowerCase().includes('cable') ||
+          item.name.toLowerCase().includes('display') ||
+          item.name.toLowerCase().includes('battery');
         if (!isPopular) return false;
       } else if (selectedCategory !== 'all') {
         if (selectedCategory === 'services' && item.category !== 'services') return false;
         if (selectedCategory === 'chargers' && item.category !== 'chargers') return false;
         if (selectedCategory === 'cables' && item.category !== 'cables') return false;
-        if (selectedCategory === 'protection' && item.category !== 'protection' && !item.name.includes('Tempered') && !item.name.includes('Cover')) return false;
+        if (selectedCategory === 'protection' && item.category !== 'protection' && !item.name.toLowerCase().includes('tempered') && !item.name.toLowerCase().includes('cover') && !item.name.toLowerCase().includes('case')) return false;
         if (selectedCategory === 'audio' && item.category !== 'earphones' && item.category !== 'headphones') return false;
-        if (selectedCategory === 'spares' && item.category !== 'spares' && item.category !== 'displays' && item.category !== 'batteries') return false;
+        if (selectedCategory === 'spares' && item.category !== 'spares' && item.category !== 'displays' && item.category !== 'batteries' && item.category !== 'charging_ports') return false;
       }
 
       if (searchQuery.trim()) {

@@ -358,6 +358,145 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// STAFF & USER MANAGEMENT (mrh_users)
+// -------------------------------------------------------------
+app.get('/api/staff', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT uid, email, display_name, role, phone, active, created_at, last_login_at FROM mrh_users ORDER BY created_at ASC;'
+    );
+    res.json(
+      result.rows.map((u) => ({
+        uid: u.uid,
+        email: u.email,
+        displayName: u.display_name,
+        role: u.role,
+        phone: u.phone || undefined,
+        active: Boolean(u.active),
+        createdAt: u.created_at ? new Date(u.created_at).toISOString() : new Date().toISOString(),
+        lastLoginAt: u.last_login_at ? new Date(u.last_login_at).toISOString() : undefined,
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/staff', async (req, res) => {
+  try {
+    const { email, displayName, role = 'technician', phone, password = 'Debasish@2026' } = req.body;
+    if (!email || !displayName) {
+      return res.status(400).json({ error: 'Email and full name are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await pool.query('SELECT uid FROM mrh_users WHERE LOWER(email) = $1;', [cleanEmail]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'A staff member with this email already exists.' });
+    }
+
+    const uid = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+    const result = await pool.query(`
+      INSERT INTO mrh_users (
+        uid, email, display_name, password_hash, role, phone, active, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW())
+      RETURNING uid, email, display_name, role, phone, active, created_at;
+    `, [uid, cleanEmail, displayName.trim(), passwordHash, role, phone ? phone.trim() : null]);
+
+    const u = result.rows[0];
+    res.status(201).json({
+      uid: u.uid,
+      email: u.email,
+      displayName: u.display_name,
+      role: u.role,
+      phone: u.phone || undefined,
+      active: true,
+      createdAt: new Date(u.created_at).toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/staff/:uid', async (req, res) => {
+  try {
+    const { role, displayName, phone, active, password } = req.body;
+    const uid = req.params.uid;
+
+    if (uid === 'owner_debasish' && active === false) {
+      return res.status(400).json({ error: 'Cannot deactivate primary owner account.' });
+    }
+
+    const updates = [];
+    const params = [uid];
+
+    if (role !== undefined) {
+      params.push(role);
+      updates.push(`role = $${params.length}`);
+    }
+    if (displayName !== undefined) {
+      params.push(displayName);
+      updates.push(`display_name = $${params.length}`);
+    }
+    if (phone !== undefined) {
+      params.push(phone);
+      updates.push(`phone = $${params.length}`);
+    }
+    if (active !== undefined) {
+      params.push(Boolean(active));
+      updates.push(`active = $${params.length}`);
+    }
+    if (password) {
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+      params.push(passwordHash);
+      updates.push(`password_hash = $${params.length}`);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields provided for update.' });
+    }
+
+    const query = `UPDATE mrh_users SET ${updates.join(', ')} WHERE uid = $1 RETURNING uid, email, display_name, role, phone, active, created_at, last_login_at;`;
+    const result = await pool.query(query, params);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+
+    const u = result.rows[0];
+    res.json({
+      uid: u.uid,
+      email: u.email,
+      displayName: u.display_name,
+      role: u.role,
+      phone: u.phone || undefined,
+      active: Boolean(u.active),
+      createdAt: new Date(u.created_at).toISOString(),
+      lastLoginAt: u.last_login_at ? new Date(u.last_login_at).toISOString() : undefined,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/staff/:uid', async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    if (uid === 'owner_debasish') {
+      return res.status(400).json({ error: 'Cannot delete primary owner account.' });
+    }
+    const result = await pool.query('DELETE FROM mrh_users WHERE uid = $1 RETURNING uid;', [uid]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found.' });
+    }
+    res.json({ success: true, deletedUid: uid });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
 // BUSINESS SETTINGS
 // -------------------------------------------------------------
 app.get('/api/settings', async (req, res) => {

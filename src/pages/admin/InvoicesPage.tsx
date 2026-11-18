@@ -66,8 +66,7 @@ export const InvoicesPage: React.FC = () => {
 
   // Line items
   const [items, setItems] = useState<{ id: string; description: string; type: 'part' | 'labour' | 'accessory' | 'other'; quantity: number; unitPriceRupees: string }[]>([
-    { id: '1', description: 'Screen & Touch Display Replacement', type: 'part', quantity: 1, unitPriceRupees: '1600' },
-    { id: '2', description: 'Installation & Quality Testing Labour', type: 'labour', quantity: 1, unitPriceRupees: '350' },
+    { id: '1', description: '', type: 'part', quantity: 1, unitPriceRupees: '' },
   ]);
 
   const [saving, setSaving] = useState(false);

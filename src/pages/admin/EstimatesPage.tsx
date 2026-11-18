@@ -52,8 +52,7 @@ export const EstimatesPage: React.FC = () => {
 
   // Line Items
   const [items, setItems] = useState<{ id: string; description: string; type: 'part' | 'labour'; quantity: number; unitPriceRupees: string }[]>([
-    { id: '1', description: 'Replacement Spare Part', type: 'part', quantity: 1, unitPriceRupees: '1200' },
-    { id: '2', description: 'Bench Diagnostic & Precision Labour', type: 'labour', quantity: 1, unitPriceRupees: '350' },
+    { id: '1', description: '', type: 'part', quantity: 1, unitPriceRupees: '' },
   ]);
 
   const [saving, setSaving] = useState(false);

@@ -45,7 +45,7 @@ export const WarrantiesPage: React.FC = () => {
   const [customerName, setCustomerName] = useState(prefillName);
   const [customerPhone, setCustomerPhone] = useState(prefillPhone);
   const [deviceInfo, setDeviceInfo] = useState(prefillDevice);
-  const [coveredWork, setCoveredWork] = useState('Replacement Display & Touch Responsiveness');
+  const [coveredWork, setCoveredWork] = useState('');
   const [durationDays, setDurationDays] = useState('30');
   const [terms, setTerms] = useState(
     'Warranty covers touch unresponsiveness and display functionality defects. Any physical cracks, deep drops, liquid contact, or opening by third parties voids this warranty.'

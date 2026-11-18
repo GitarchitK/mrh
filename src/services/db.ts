@@ -14,6 +14,8 @@ import {
   Warranty,
   PublicTrackingResponse,
   RepairStatus,
+  StaffUser,
+  UserRole,
 } from '../types';
 import {
   DEFAULT_BUSINESS_SETTINGS,
@@ -877,3 +879,48 @@ function getPublicStatusDescription(status: RepairStatus): string {
       return 'Status update recorded.';
   }
 }
+
+// -------------------------------------------------------------
+// 13. STAFF & USER MANAGEMENT (PostgreSQL mrh_users)
+// -------------------------------------------------------------
+export async function getStaffUsers(): Promise<StaffUser[]> {
+  try {
+    const list = await apiRequest<StaffUser[]>('/staff');
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch (err) {
+    console.warn('Error fetching staff from API:', err);
+  }
+  return [];
+}
+
+export async function createStaffUser(data: {
+  email: string;
+  displayName: string;
+  role: UserRole;
+  phone?: string;
+  password?: string;
+}): Promise<StaffUser> {
+  return await apiRequest<StaffUser>('/staff', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateStaffUser(
+  uid: string,
+  updates: Partial<StaffUser> & { password?: string }
+): Promise<StaffUser> {
+  return await apiRequest<StaffUser>(`/staff/${uid}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteStaffUser(uid: string): Promise<void> {
+  await apiRequest(`/staff/${uid}`, {
+    method: 'DELETE',
+  });
+}
+
