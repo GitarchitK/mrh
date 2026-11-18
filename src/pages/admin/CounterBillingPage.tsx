@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Receipt,
-  PlusCircle,
   Search,
   Printer,
   CreditCard,
@@ -26,6 +26,19 @@ import {
   ShieldCheck,
   Clock,
   History,
+  Barcode,
+  Layers,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  Minus,
+  Check,
+  DollarSign,
+  Smartphone,
+  ChevronDown,
+  Volume2,
+  X,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   getInvoices,
@@ -55,34 +68,52 @@ import { SUPPORTED_VOICE_LANGUAGES } from '../../services/speechService';
 import { formatPaiseToINR, rupeesToPaise, calculateTotalsPaise } from '../../lib/money';
 import { formatDate, formatDateTime, formatPhoneNumber } from '../../lib/utils';
 import { generateBillNumber, generatePaymentReference } from '../../lib/reference';
-import { STORE_PRODUCTS } from '../../services/storeData';
+import { STORE_PRODUCTS, STORE_CATEGORIES } from '../../services/storeData';
 
-// Common Quick Counter Presets
-const QUICK_CATALOG_ITEMS = [
-  { name: '11D Tempered Glass', type: 'accessory' as const, price: 150, category: 'Protection' },
-  { name: 'UV Curved Screen Guard', type: 'accessory' as const, price: 350, category: 'Protection' },
-  { name: 'Privacy Screen Protector', type: 'accessory' as const, price: 250, category: 'Protection' },
-  { name: '65W Fast Charger Adapter', type: 'accessory' as const, price: 650, category: 'Chargers' },
-  { name: '33W Fast Charger Adapter', type: 'accessory' as const, price: 450, category: 'Chargers' },
-  { name: '6A Type-C Fast Cable', type: 'accessory' as const, price: 150, category: 'Cables' },
-  { name: 'Apple Lightning Cable', type: 'accessory' as const, price: 250, category: 'Cables' },
-  { name: 'Silicone Matte Back Cover', type: 'accessory' as const, price: 180, category: 'Covers' },
-  { name: 'Camera Lens Protector', type: 'accessory' as const, price: 100, category: 'Protection' },
-  { name: 'Screen Guard Pasting Service', type: 'labour' as const, price: 50, category: 'Service' },
-  { name: 'Charging Port Dust Cleaning', type: 'labour' as const, price: 100, category: 'Service' },
-  { name: 'Speaker & Mic Cleaning', type: 'labour' as const, price: 100, category: 'Service' },
-  { name: 'Software Reset & Setup', type: 'labour' as const, price: 300, category: 'Software' },
-  { name: 'Battery Replacement Labour', type: 'labour' as const, price: 250, category: 'Service' },
-  { name: 'General Diagnostic Charge', type: 'labour' as const, price: 150, category: 'Service' },
+// Counter Repair Services Catalog
+const COUNTER_SERVICES = [
+  { id: 'srv-screen-guard', name: 'Screen Guard Pasting Service', category: 'services', pricePaise: 5000, type: 'labour' as const, badge: 'Quick Service' },
+  { id: 'srv-port-clean', name: 'Charging Port Dust Cleaning', category: 'services', pricePaise: 10000, type: 'labour' as const, badge: '5 Mins' },
+  { id: 'srv-mic-speaker', name: 'Ear Speaker & Mic Deep Cleaning', category: 'services', pricePaise: 10000, type: 'labour' as const, badge: 'Audio Fix' },
+  { id: 'srv-battery-labour', name: 'Battery Pasting & Replacement Labour', category: 'services', pricePaise: 25000, type: 'labour' as const, badge: 'Workshop' },
+  { id: 'srv-software-reset', name: 'Software Reset & Pattern Unlock', category: 'services', pricePaise: 35000, type: 'labour' as const, badge: 'Software' },
+  { id: 'srv-os-flash', name: 'OS Flashing / Bootloop Recovery', category: 'services', pricePaise: 60000, type: 'labour' as const, badge: 'Software' },
+  { id: 'srv-diag', name: 'Motherboard Diagnostic Charge', category: 'services', pricePaise: 15000, type: 'labour' as const, badge: 'Inspection' },
+  { id: 'srv-back-glass', name: 'Back Glass Laser Removal & Pasting', category: 'services', pricePaise: 40000, type: 'labour' as const, badge: 'Workshop' },
+  { id: 'srv-camera-lens', name: 'Camera Outer Glass Replacement', category: 'services', pricePaise: 20000, type: 'labour' as const, badge: 'Quick Fix' },
 ];
+
+interface POSCartItem {
+  id: string;
+  productId?: string;
+  description: string;
+  type: 'accessory' | 'part' | 'labour' | 'other';
+  quantity: number;
+  unitPricePaise: number;
+  totalPaise: number;
+}
+
+interface ParkedCart {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  items: POSCartItem[];
+  discountRupees: string;
+  notes: string;
+  createdAt: string;
+}
 
 export const CounterBillingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { registerInvoiceHandler, openAssistant, activeLanguage } = useVoice();
-  const currentVoiceLang = SUPPORTED_VOICE_LANGUAGES.find((l) => l.code === activeLanguage) || SUPPORTED_VOICE_LANGUAGES[0];
+  const currentVoiceLang =
+    SUPPORTED_VOICE_LANGUAGES.find((l) => l.code === activeLanguage) || SUPPORTED_VOICE_LANGUAGES[0];
 
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  // URL Prefill params
   const prefillJobId = searchParams.get('jobId') || '';
   const prefillName = searchParams.get('name') || '';
   const prefillPhone = searchParams.get('phone') || '';
@@ -97,37 +128,54 @@ export const CounterBillingPage: React.FC = () => {
   const [settings, setSettings] = useState<BusinessSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Form State
+  // POS State
   const [billNumber, setBillNumber] = useState('');
-  const [customerPhone, setCustomerPhone] = useState(prefillPhone);
-  const [customerName, setCustomerName] = useState(prefillName);
-  const [customerId, setCustomerId] = useState(prefillCustId);
+  const [customerName, setCustomerName] = useState(prefillName || 'Walk-in Customer');
+  const [customerPhone, setCustomerPhone] = useState(prefillPhone || '');
+  const [customerId, setCustomerId] = useState(prefillCustId || '');
   const [selectedJobId, setSelectedJobId] = useState(prefillJobId);
   const [selectedJobNumber, setSelectedJobNumber] = useState(prefillJobNumber);
   const [notes, setNotes] = useState('');
 
-  // Items State
-  const [items, setItems] = useState<
-    { id: string; description: string; type: 'part' | 'labour' | 'accessory' | 'other'; quantity: number; unitPriceRupees: string }[]
-  >([
-    { id: '1', description: '11D Tempered Glass Installation', type: 'accessory', quantity: 1, unitPriceRupees: '150' },
+  // Cart & Line Items
+  const [cart, setCart] = useState<POSCartItem[]>([
+    {
+      id: 'cart-init-1',
+      description: '11D Premium Tempered Glass',
+      type: 'accessory',
+      quantity: 1,
+      unitPricePaise: 15000,
+      totalPaise: 15000,
+    },
   ]);
 
-  // Payment State
+  // Parked / Held Carts
+  const [parkedCarts, setParkedCarts] = useState<ParkedCart[]>([]);
+  const [showParkedModal, setShowParkedModal] = useState(false);
+
+  // Filtering & Catalog
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [phoneSearchMatches, setPhoneSearchMatches] = useState<Customer[]>([]);
+
+  // Settlement & Payment
   const [discountRupees, setDiscountRupees] = useState('0');
   const [taxEnabled, setTaxEnabled] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card' | 'split' | 'pending'>('cash');
-  const [amountPaidRupees, setAmountPaidRupees] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card' | 'pending'>('cash');
+  const [cashTenderedRupees, setCashTenderedRupees] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
 
-  // UI state
-  const [inventorySearch, setInventorySearch] = useState('');
-  const [phoneSearchMatches, setPhoneSearchMatches] = useState<Customer[]>([]);
+  // Modals & UI
   const [saving, setSaving] = useState(false);
   const [printModalInvoice, setPrintModalInvoice] = useState<Invoice | null>(null);
-  const [showRecentDrawer, setShowRecentDrawer] = useState(false);
+  const [showRegisterSummary, setShowRegisterSummary] = useState(false);
+  const [showCustomItemModal, setShowCustomItemModal] = useState(false);
+  const [customItemDesc, setCustomItemDesc] = useState('');
+  const [customItemType, setCustomItemType] = useState<'accessory' | 'part' | 'labour' | 'other'>('accessory');
+  const [customItemPrice, setCustomItemPrice] = useState('100');
 
-  // Load initial data
+  // Load Data
   const loadData = async () => {
     setLoading(true);
     try {
@@ -144,10 +192,9 @@ export const CounterBillingPage: React.FC = () => {
       setInventory(invProdList);
       setSettings(bSettings);
 
-      // Generate unique bill number checking against existing bills
       setBillNumber(generateBillNumber(invList));
     } catch (err) {
-      console.error('Error loading counter billing data:', err);
+      console.error('Error initializing POS data:', err);
     } finally {
       setLoading(false);
     }
@@ -157,7 +204,7 @@ export const CounterBillingPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Voice AI Billing Assistant Listener
+  // Voice AI Assistant Integration
   useEffect(() => {
     const unregister = registerInvoiceHandler((data) => {
       if (data.customerName) setCustomerName(data.customerName);
@@ -165,21 +212,26 @@ export const CounterBillingPage: React.FC = () => {
       if (data.discountRupees) setDiscountRupees(data.discountRupees);
       if (data.notes) setNotes(data.notes);
       if (data.items && data.items.length > 0) {
-        setItems(
-          data.items.map((it, idx) => ({
-            id: String(Date.now() + idx),
-            description: it.description,
-            type: it.type,
-            quantity: it.quantity || 1,
-            unitPriceRupees: it.unitPriceRupees || '0',
-          }))
+        setCart(
+          data.items.map((it, idx) => {
+            const uPrice = rupeesToPaise(it.unitPriceRupees || '0');
+            const qty = it.quantity || 1;
+            return {
+              id: `voice-${Date.now()}-${idx}`,
+              description: it.description,
+              type: it.type || 'accessory',
+              quantity: qty,
+              unitPricePaise: uPrice,
+              totalPaise: uPrice * qty,
+            };
+          })
         );
       }
     });
     return unregister;
   }, [registerInvoiceHandler]);
 
-  // Customer Phone Lookup
+  // Customer Phone Auto-Lookup
   useEffect(() => {
     const clean = customerPhone.trim().replace(/\D/g, '');
     if (clean.length >= 3) {
@@ -199,50 +251,223 @@ export const CounterBillingPage: React.FC = () => {
     setPhoneSearchMatches([]);
   };
 
-  // Regeneration of bill number
-  const handleRegenerateBillNumber = () => {
-    setBillNumber(generateBillNumber(invoices));
+  // Unified Product Catalog for POS
+  const allPOSProducts = useMemo(() => {
+    const list: {
+      id: string;
+      name: string;
+      category: string;
+      pricePaise: number;
+      type: 'accessory' | 'part' | 'labour' | 'other';
+      badge?: string;
+      stock?: number;
+      sku?: string;
+    }[] = [];
+
+    // 1. Add services
+    COUNTER_SERVICES.forEach((srv) => {
+      list.push({
+        id: srv.id,
+        name: srv.name,
+        category: 'services',
+        pricePaise: srv.pricePaise,
+        type: srv.type,
+        badge: srv.badge,
+        stock: 999,
+      });
+    });
+
+    // 2. Add store accessories
+    STORE_PRODUCTS.forEach((prod) => {
+      list.push({
+        id: prod.id,
+        name: prod.name,
+        category: prod.category,
+        pricePaise: prod.pricePaise,
+        type: prod.category === 'spares' ? 'part' : 'accessory',
+        badge: prod.badge,
+        stock: prod.stockCount,
+        sku: prod.slug,
+      });
+    });
+
+    // 3. Add inventory from real DB if not duplicate
+    inventory.forEach((inv) => {
+      if (!list.some((l) => l.name.toLowerCase() === inv.name.toLowerCase())) {
+        list.push({
+          id: inv.id,
+          name: inv.name,
+          category: inv.category,
+          pricePaise: inv.sellingPricePaise,
+          type:
+            inv.category === 'displays' || inv.category === 'batteries' || inv.category === 'charging_ports'
+              ? 'part'
+              : 'accessory',
+          badge: `In Stock: ${inv.quantityAvailable}`,
+          stock: inv.quantityAvailable,
+          sku: inv.sku,
+        });
+      }
+    });
+
+    return list;
+  }, [inventory]);
+
+  // Filtered Catalog by Category & Search
+  const filteredCatalog = useMemo(() => {
+    return allPOSProducts.filter((item) => {
+      if (selectedCategory === 'popular') {
+        const isPopular =
+          item.badge === 'Best Seller' ||
+          item.badge === 'Quick Service' ||
+          item.badge === 'Quick Fix' ||
+          item.name.includes('Tempered') ||
+          item.name.includes('Charger') ||
+          item.name.includes('Cable');
+        if (!isPopular) return false;
+      } else if (selectedCategory !== 'all') {
+        if (selectedCategory === 'services' && item.category !== 'services') return false;
+        if (selectedCategory === 'chargers' && item.category !== 'chargers') return false;
+        if (selectedCategory === 'cables' && item.category !== 'cables') return false;
+        if (selectedCategory === 'protection' && item.category !== 'protection' && !item.name.includes('Tempered') && !item.name.includes('Cover')) return false;
+        if (selectedCategory === 'audio' && item.category !== 'earphones' && item.category !== 'headphones') return false;
+        if (selectedCategory === 'spares' && item.category !== 'spares' && item.category !== 'displays' && item.category !== 'batteries') return false;
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = item.name.toLowerCase().includes(q);
+        const matchesSku = item.sku?.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku) return false;
+      }
+
+      return true;
+    });
+  }, [allPOSProducts, selectedCategory, searchQuery]);
+
+  // Add Item to POS Cart
+  const addToCart = (product: {
+    id: string;
+    name: string;
+    pricePaise: number;
+    type: 'accessory' | 'part' | 'labour' | 'other';
+  }) => {
+    setCart((prev) => {
+      const existingIndex = prev.findIndex((item) => item.description === product.name);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        const newQty = updated[existingIndex].quantity + 1;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: newQty,
+          totalPaise: updated[existingIndex].unitPricePaise * newQty,
+        };
+        return updated;
+      } else {
+        return [
+          ...prev,
+          {
+            id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            productId: product.id,
+            description: product.name,
+            type: product.type,
+            quantity: 1,
+            unitPricePaise: product.pricePaise,
+            totalPaise: product.pricePaise,
+          },
+        ];
+      }
+    });
   };
 
-  // Item modifications
-  const handleAddItem = (
-    description = '',
-    type: 'part' | 'labour' | 'accessory' | 'other' = 'accessory',
-    price = '0'
-  ) => {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: String(Date.now() + Math.random()),
-        description,
-        type,
-        quantity: 1,
-        unitPriceRupees: price,
-      },
-    ]);
-  };
-
-  const handleRemoveItem = (index: number) => {
-    if (items.length > 1) {
-      setItems((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleUpdateItem = (index: number, field: string, value: any) => {
-    setItems((prev) => {
+  // Adjust Quantity
+  const updateQuantity = (index: number, delta: number) => {
+    setCart((prev) => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
+      const newQty = copy[index].quantity + delta;
+      if (newQty <= 0) {
+        return copy.filter((_, i) => i !== index);
+      }
+      copy[index] = {
+        ...copy[index],
+        quantity: newQty,
+        totalPaise: copy[index].unitPricePaise * newQty,
+      };
       return copy;
     });
   };
 
-  // Financial calculations
+  const removeFromCart = (index: number) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    setDiscountRupees('0');
+    setCashTenderedRupees('');
+    setPaymentRef('');
+    setCustomerName('Walk-in Customer');
+    setCustomerPhone('');
+    setCustomerId('');
+    setSelectedJobId('');
+    setSelectedJobNumber('');
+    setNotes('');
+    setBillNumber(generateBillNumber(invoices));
+  };
+
+  // Handle Barcode Scan / Fast SKU Input
+  const handleBarcodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput.trim()) return;
+
+    const term = barcodeInput.trim().toLowerCase();
+    const matched = allPOSProducts.find(
+      (p) => p.sku?.toLowerCase() === term || p.name.toLowerCase().includes(term)
+    );
+
+    if (matched) {
+      addToCart(matched);
+      setBarcodeInput('');
+    } else {
+      alert(`No product found matching barcode/SKU: ${barcodeInput}`);
+    }
+  };
+
+  // Hold / Park Cart
+  const handleParkCart = () => {
+    if (cart.length === 0) {
+      alert('Cart is empty. Add items before holding.');
+      return;
+    }
+
+    const newParked: ParkedCart = {
+      id: `parked-${Date.now()}`,
+      customerName: customerName || 'Walk-in Customer',
+      customerPhone,
+      items: cart,
+      discountRupees,
+      notes,
+      createdAt: new Date().toISOString(),
+    };
+
+    setParkedCarts((prev) => [newParked, ...prev]);
+    clearCart();
+  };
+
+  const handleResumeCart = (parked: ParkedCart) => {
+    setCart(parked.items);
+    setCustomerName(parked.customerName);
+    setCustomerPhone(parked.customerPhone);
+    setDiscountRupees(parked.discountRupees);
+    setNotes(parked.notes);
+    setParkedCarts((prev) => prev.filter((p) => p.id !== parked.id));
+    setShowParkedModal(false);
+  };
+
+  // Totals & Math
   const subtotalPaise = useMemo(() => {
-    return items.reduce((acc, item) => {
-      const pPaise = rupeesToPaise(item.unitPriceRupees || 0);
-      return acc + pPaise * Math.max(1, item.quantity);
-    }, 0);
-  }, [items]);
+    return cart.reduce((acc, it) => acc + it.totalPaise, 0);
+  }, [cart]);
 
   const discountPaise = useMemo(() => {
     return rupeesToPaise(discountRupees || 0);
@@ -252,63 +477,51 @@ export const CounterBillingPage: React.FC = () => {
     return calculateTotalsPaise(subtotalPaise, discountPaise, taxEnabled ? 18 : 0, taxEnabled);
   }, [subtotalPaise, discountPaise, taxEnabled]);
 
-  // Sync default amount paid when totals or payment method change
-  useEffect(() => {
-    if (paymentMethod === 'pending') {
-      setAmountPaidRupees('0');
-    } else if (paymentMethod === 'cash' || paymentMethod === 'upi' || paymentMethod === 'card') {
-      setAmountPaidRupees(String(totals.totalPaise / 100));
-    }
-  }, [totals.totalPaise, paymentMethod]);
+  // Cash change calculator
+  const cashTenderedPaise = useMemo(() => {
+    if (!cashTenderedRupees) return totals.totalPaise;
+    return rupeesToPaise(cashTenderedRupees);
+  }, [cashTenderedRupees, totals.totalPaise]);
+
+  const cashChangeToReturnPaise = useMemo(() => {
+    if (paymentMethod !== 'cash') return 0;
+    return Math.max(0, cashTenderedPaise - totals.totalPaise);
+  }, [cashTenderedPaise, totals.totalPaise, paymentMethod]);
 
   const actualAmountPaidPaise = useMemo(() => {
-    const parsed = rupeesToPaise(amountPaidRupees || 0);
-    return Math.min(totals.totalPaise, Math.max(0, parsed));
-  }, [amountPaidRupees, totals.totalPaise]);
+    if (paymentMethod === 'pending') return 0;
+    return totals.totalPaise;
+  }, [paymentMethod, totals.totalPaise]);
 
   const balanceDuePaise = Math.max(0, totals.totalPaise - actualAmountPaidPaise);
 
-  // Link repair job selection
-  const handleSelectJob = (jobId: string) => {
-    setSelectedJobId(jobId);
-    const found = repairs.find((r) => r.id === jobId);
-    if (found) {
-      setSelectedJobNumber(found.jobNumber);
-      if (!customerName) setCustomerName(found.customerName);
-      if (!customerPhone) setCustomerPhone(found.customerPhone);
-      if (found.customerId) setCustomerId(found.customerId);
-    }
-  };
+  // Dynamic UPI URL & QR
+  const upiPayee = '9732789938@upi';
+  const totalRupeesStr = (totals.totalPaise / 100).toFixed(2);
+  const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+    `upi://pay?pa=${upiPayee}&pn=Rajib%20da%20Mobile%20Repairing%20House&am=${totalRupeesStr}&cu=INR&tn=POS%20${billNumber}`
+  )}`;
 
-  // Submit / Save Bill
-  const handleGenerateBill = async (autoPrint = true) => {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      alert('Please enter both customer name and phone number.');
-      return;
-    }
-
-    if (items.some((it) => !it.description.trim())) {
-      alert('All bill line items must have a valid description.');
+  // Checkout / Complete Transaction
+  const handleCheckout = async (openPrint = true) => {
+    if (cart.length === 0) {
+      alert('Cannot checkout an empty cart. Add products or services first.');
       return;
     }
 
     setSaving(true);
     try {
-      const lineItems: InvoiceLineItem[] = items.map((item) => {
-        const uPrice = rupeesToPaise(item.unitPriceRupees || 0);
-        return {
-          id: item.id,
-          description: item.description.trim(),
-          type: item.type,
-          quantity: Math.max(1, item.quantity),
-          unitPricePaise: uPrice,
-          totalPaise: uPrice * Math.max(1, item.quantity),
-        };
-      });
+      const lineItems: InvoiceLineItem[] = cart.map((c) => ({
+        id: c.id,
+        description: c.description,
+        type: c.type,
+        quantity: c.quantity,
+        unitPricePaise: c.unitPricePaise,
+        totalPaise: c.totalPaise,
+      }));
 
       const now = new Date().toISOString();
       const uniqueBillNo = billNumber || generateBillNumber(invoices);
-
       const status = balanceDuePaise <= 0 ? 'paid' : actualAmountPaidPaise > 0 ? 'partial' : 'unpaid';
 
       const newBill: Invoice = {
@@ -319,8 +532,8 @@ export const CounterBillingPage: React.FC = () => {
         repairJobId: selectedJobId || undefined,
         jobNumber: selectedJobNumber || undefined,
         customerId: customerId || 'cust_walkin',
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
+        customerName: customerName.trim() || 'Walk-in Customer',
+        customerPhone: customerPhone.trim() || '9732789938',
         items: lineItems,
         subtotalPaise: totals.subtotalPaise,
         discountPaise: totals.discountPaise,
@@ -331,14 +544,14 @@ export const CounterBillingPage: React.FC = () => {
         status,
         issuedAt: now,
         notes: notes.trim() || undefined,
-        createdBy: currentUser?.displayName || 'Debasish',
+        createdBy: currentUser?.displayName || 'Debasish (POS)',
         createdAt: now,
         updatedAt: now,
       };
 
       await saveInvoice(newBill);
 
-      // Record payment into ledger if amount was paid
+      // Record payment into payment ledger if paid
       if (actualAmountPaidPaise > 0) {
         const pMethod: PaymentMethod =
           paymentMethod === 'upi' ? 'upi' : paymentMethod === 'card' ? 'other' : 'cash';
@@ -348,495 +561,515 @@ export const CounterBillingPage: React.FC = () => {
           invoiceId: newBill.id,
           repairJobId: selectedJobId || undefined,
           customerId: customerId || 'cust_walkin',
-          customerName: customerName.trim(),
+          customerName: customerName.trim() || 'Walk-in Customer',
           amountPaise: actualAmountPaidPaise,
           method: pMethod,
           externalReference: paymentRef.trim() || undefined,
-          notes: `Counter sale payment (${uniqueBillNo})`,
+          notes: `POS settlement (${uniqueBillNo}) via ${paymentMethod.toUpperCase()}`,
           recordedBy: currentUser?.displayName || 'Debasish',
           recordedAt: now,
         });
       }
 
-      // Update state
       setInvoices((prev) => [newBill, ...prev]);
 
-      if (autoPrint) {
+      if (openPrint) {
         setPrintModalInvoice(newBill);
       } else {
-        alert(`Bill ${uniqueBillNo} saved successfully!`);
-        resetForm();
+        alert(`Bill ${uniqueBillNo} generated successfully!`);
+        clearCart();
       }
     } catch (err) {
-      console.error('Failed to create counter bill:', err);
-      alert('Error generating counter bill. Please try again.');
+      console.error('POS Checkout failed:', err);
+      alert('Error during checkout. Please verify customer and item details.');
     } finally {
       setSaving(false);
     }
   };
 
-  const resetForm = () => {
-    setBillNumber(generateBillNumber(invoices));
-    setCustomerName('');
-    setCustomerPhone('');
-    setCustomerId('');
-    setSelectedJobId('');
-    setSelectedJobNumber('');
-    setNotes('');
-    setDiscountRupees('0');
-    setTaxEnabled(false);
-    setPaymentMethod('cash');
-    setPaymentRef('');
-    setItems([
-      { id: '1', description: '11D Tempered Glass Installation', type: 'accessory', quantity: 1, unitPriceRupees: '150' },
-    ]);
+  // Add Custom Item Pop-up handler
+  const handleAddCustomItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customItemDesc.trim()) return;
+    const priceP = rupeesToPaise(customItemPrice || '0');
+    addToCart({
+      id: `custom-${Date.now()}`,
+      name: customItemDesc.trim(),
+      pricePaise: priceP,
+      type: customItemType,
+    });
+    setCustomItemDesc('');
+    setCustomItemPrice('100');
+    setShowCustomItemModal(false);
   };
 
-  // Filtered inventory products for quick search
-  const filteredInventory = useMemo(() => {
-    if (!inventorySearch.trim()) return [];
-    const q = inventorySearch.toLowerCase();
-    return inventory
-      .filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
-      .slice(0, 5);
-  }, [inventory, inventorySearch]);
+  // Today's Register Stats
+  const todayStats = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayInvoices = invoices.filter((i) => i.issuedAt && i.issuedAt.startsWith(todayStr));
+    const totalSalesPaise = todayInvoices.reduce((acc, i) => acc + i.totalPaise, 0);
+    const totalCollectedPaise = todayInvoices.reduce((acc, i) => acc + i.amountPaidPaise, 0);
+    const totalDuePaise = todayInvoices.reduce((acc, i) => acc + i.balanceDuePaise, 0);
+    return {
+      count: todayInvoices.length,
+      totalSalesPaise,
+      totalCollectedPaise,
+      totalDuePaise,
+    };
+  }, [invoices]);
 
   return (
-    <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-brand-orange animate-ping" />
-            <h1 className="text-2xl font-black text-brand-navy tracking-tight flex items-center gap-2">
-              <Receipt className="w-6 h-6 text-brand-orange" />
-              In-Counter Billing (POS)
-            </h1>
+    <div className="space-y-4">
+      {/* POS Top Terminal Bar */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-brand-border shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-orange/10 flex items-center justify-center text-brand-orange border border-brand-orange/20 shrink-0">
+            <Receipt className="w-5 h-5" />
           </div>
-          <p className="text-xs text-brand-secondary mt-0.5">
-            Instant retail accessory billing, quick counter repair jobs, unique bill numbers & modern branded receipts.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black text-brand-navy tracking-tight">
+                POS Register Terminal
+              </h1>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                LIVE
+              </span>
+            </div>
+            <div className="text-xs text-brand-secondary flex items-center gap-2">
+              <span>Counter: Debasish</span>
+              <span>&bull;</span>
+              <span className="font-mono font-semibold text-brand-orange">{billNumber}</span>
+            </div>
+          </div>
         </div>
 
+        {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Barcode scanner input */}
+          <form onSubmit={handleBarcodeSubmit} className="relative">
+            <Barcode className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              ref={barcodeInputRef}
+              type="text"
+              placeholder="Scan Barcode / SKU..."
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              className="pl-9 pr-3 py-1.5 rounded-xl border border-brand-border text-xs w-44 sm:w-56 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/30 font-mono"
+            />
+          </form>
+
+          {/* Voice AI button */}
           <Button
             size="sm"
             variant="outline"
             leftIcon={<Mic className="w-3.5 h-3.5 text-brand-orange" />}
             onClick={() => openAssistant('billing')}
+            className="text-xs"
           >
-            <span>Voice Fill ({currentVoiceLang.nativeLabel})</span>
+            <span className="hidden sm:inline">Voice Fill</span> ({currentVoiceLang.nativeLabel})
           </Button>
 
+          {/* Custom Item Adder */}
           <Button
             size="sm"
             variant="outline"
-            leftIcon={<History className="w-3.5 h-3.5" />}
-            onClick={() => setShowRecentDrawer(true)}
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => setShowCustomItemModal(true)}
+            className="text-xs"
           >
-            Recent Bills
+            Custom Item
           </Button>
 
-          <Button size="sm" variant="outline" onClick={resetForm}>
-            Clear Form
+          {/* Parked Carts */}
+          <button
+            type="button"
+            onClick={() => setShowParkedModal(true)}
+            className="relative px-3 py-1.5 rounded-xl border border-brand-border bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors"
+          >
+            <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
+            <span>Held Carts</span>
+            {parkedCarts.length > 0 && (
+              <span className="w-5 h-5 rounded-full bg-brand-orange text-white text-[10px] flex items-center justify-center font-bold">
+                {parkedCarts.length}
+              </span>
+            )}
+          </button>
+
+          {/* Register Shift Summary */}
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />}
+            onClick={() => setShowRegisterSummary(true)}
+            className="text-xs"
+          >
+            Day Register
           </Button>
         </div>
       </div>
 
-      {/* Main Billing Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Bill Inputs & Line Items (8 Cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Customer & Job Info Card */}
-          <div className="bg-white p-5 rounded-3xl border border-brand-border shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-brand-border pb-3">
-              <h2 className="text-sm font-bold text-brand-navy flex items-center gap-2">
-                <User className="w-4 h-4 text-brand-orange" />
-                Customer & Reference
-              </h2>
-              <span className="text-[10px] text-brand-secondary font-medium">
-                Auto-lookup by phone or name
-              </span>
+      {/* Main 2-Panel POS Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* ============================================================== */}
+        {/* LEFT PANEL: PRODUCT & SERVICE CATALOG (7 COLS)                 */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-7 space-y-3">
+          {/* Category Filter Pills & Search */}
+          <div className="bg-white p-3 rounded-2xl border border-brand-border shadow-xs space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Filter catalog by product title, brand, or model..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
+                />
+              </div>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Phone with Auto Lookup */}
+            {/* Category Scroll Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'all'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All Items ({allPOSProducts.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('popular')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all flex items-center gap-1 ${
+                  selectedCategory === 'popular'
+                    ? 'bg-brand-orange text-white shadow-glow-orange'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Zap className="w-3 h-3" />
+                Popular
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('protection')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'protection'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🛡️ Tempered & Covers
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('chargers')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'chargers'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🔌 Fast Chargers
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('cables')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'cables'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🧵 Cables
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('services')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'services'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🛠️ Counter Services
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('audio')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'audio'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🎧 Audio
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('spares')}
+                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                  selectedCategory === 'spares'
+                    ? 'bg-brand-navy text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                📱 Spares
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive POS Product Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+            {filteredCatalog.map((prod) => {
+              const inCartItem = cart.find((c) => c.description === prod.name);
+
+              return (
+                <button
+                  key={prod.id}
+                  type="button"
+                  onClick={() => addToCart(prod)}
+                  className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all active:scale-95 group relative overflow-hidden min-h-[105px] ${
+                    inCartItem
+                      ? 'bg-brand-orange/5 border-brand-orange/40 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 border-brand-border shadow-2xs hover:border-slate-300'
+                  }`}
+                >
+                  {/* In Cart Indicator Badge */}
+                  {inCartItem && (
+                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                      {inCartItem.quantity}
+                    </span>
+                  )}
+
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                        {prod.type}
+                      </span>
+                      {prod.badge && (
+                        <span className="text-[9px] font-medium text-brand-orange truncate max-w-[100px]">
+                          {prod.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-brand-navy">
+                      {prod.name}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
+                    <span className="text-xs font-black font-mono text-brand-orange">
+                      {formatPaiseToINR(prod.pricePaise)}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-navy flex items-center gap-0.5">
+                      <Plus className="w-3 h-3" />
+                      Add
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ============================================================== */}
+        {/* RIGHT PANEL: ACTIVE REGISTER TICKET & CHECKOUT (5 COLS)        */}
+        {/* ============================================================== */}
+        <div className="lg:col-span-5 bg-white rounded-3xl border border-brand-border shadow-md flex flex-col h-full max-h-[calc(100vh-140px)] overflow-hidden">
+          {/* Ticket Header & Customer Selector */}
+          <div className="p-3.5 bg-slate-50 border-b border-brand-border space-y-2 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-brand-orange" />
+                <span className="text-xs font-black text-brand-navy uppercase tracking-wider">
+                  Active Ticket ({cart.reduce((a, b) => a + b.quantity, 0)} Items)
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleParkCart}
+                  title="Park this cart to serve another customer"
+                  className="px-2 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex items-center gap-1"
+                >
+                  <PauseCircle className="w-3 h-3" />
+                  Hold
+                </button>
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  title="Clear all ticket items"
+                  className="px-2 py-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Customer Bar */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="relative">
-                <Input
-                  label="Customer Phone *"
-                  placeholder="e.g. 9830012345"
-                  required
-                  enableVoice
+                <input
+                  type="text"
+                  placeholder="Cust. Phone (Lookup)..."
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand-orange font-mono"
                 />
-                {/* Auto Lookup Dropdown */}
+                {/* Auto matches dropdown */}
                 {phoneSearchMatches.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-brand-border rounded-xl shadow-xl z-20 p-1.5 space-y-1">
-                    <div className="text-[10px] font-bold text-brand-secondary px-2 py-0.5">
-                      Existing Customers Matched:
-                    </div>
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-brand-border rounded-xl shadow-xl z-30 p-1 space-y-1">
                     {phoneSearchMatches.map((c) => (
                       <button
                         key={c.id}
                         type="button"
                         onClick={() => selectExistingCustomer(c)}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-brand-light flex items-center justify-between text-xs transition-colors"
+                        className="w-full text-left px-2 py-1 rounded hover:bg-slate-100 text-[11px] flex justify-between"
                       >
-                        <span className="font-bold text-brand-navy">{c.fullName}</span>
-                        <span className="font-mono text-brand-secondary text-[11px]">{c.phone}</span>
+                        <span className="font-bold truncate">{c.fullName}</span>
+                        <span className="font-mono text-slate-500">{c.phone}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Customer Name */}
-              <Input
-                label="Customer Name *"
-                placeholder="e.g. Rahul Sharma"
-                required
-                enableVoice
+              <input
+                type="text"
+                placeholder="Customer Name..."
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand-orange font-semibold"
               />
             </div>
+          </div>
 
-            {/* Optional Repair Job Association */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-semibold text-brand-text mb-1">
-                  Link to Active Repair Job (Optional)
-                </label>
-                <select
-                  value={selectedJobId}
-                  onChange={(e) => handleSelectJob(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-brand-border bg-white text-xs text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                >
-                  <option value="">-- Walk-in Counter Sale (No Job) --</option>
-                  {repairs.slice(0, 20).map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.jobNumber} &bull; {r.brand} {r.model} ({r.customerName})
-                    </option>
-                  ))}
-                </select>
+          {/* Ticket Line Items (Scrollable Body) */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 divide-y divide-slate-100">
+            {cart.length === 0 ? (
+              <div className="py-12 text-center space-y-2">
+                <ShoppingBag className="w-10 h-10 text-slate-200 mx-auto" />
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Ticket is Empty
+                </div>
+                <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                  Click any product or service tile from the left catalog, or scan a barcode to add.
+                </p>
               </div>
+            ) : (
+              cart.map((item, idx) => (
+                <div key={item.id} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-800 truncate leading-snug">{item.description}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {formatPaiseToINR(item.unitPricePaise)} &times; {item.quantity}
+                    </div>
+                  </div>
 
-              <Input
-                label="Internal Bill Note (Optional)"
-                placeholder="e.g. Walk-in customer, discount approved by Debasish"
-                enableVoice
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Quick-Add Catalog Pills */}
-          <div className="bg-white p-5 rounded-3xl border border-brand-border shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-brand-navy flex items-center gap-2">
-                <Zap className="w-4 h-4 text-brand-orange" />
-                Quick-Add Counter Presets (1-Click)
-              </h2>
-              <span className="text-[10px] text-brand-secondary">Click to append to bill</span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_CATALOG_ITEMS.map((item) => (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => handleAddItem(item.name, item.type, String(item.price))}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-brand-orange/10 text-slate-700 hover:text-brand-orange border border-slate-200 hover:border-brand-orange/40 text-xs font-semibold transition-all active:scale-95 shadow-2xs group"
-                >
-                  <span>{item.name}</span>
-                  <span className="font-mono text-brand-orange font-bold text-[11px] group-hover:scale-105 transition-transform">
-                    ₹{item.price}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Inventory Search & Quick Add */}
-          <div className="bg-white p-5 rounded-3xl border border-brand-border shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-brand-navy flex items-center gap-2">
-                <PackageCheck className="w-4 h-4 text-brand-orange" />
-                Add from Shop Inventory
-              </h2>
-              <span className="text-[10px] text-brand-secondary">Real-time stock & prices</span>
-            </div>
-
-            <div className="relative">
-              <Input
-                placeholder="Search inventory by accessory name, part SKU, or model..."
-                value={inventorySearch}
-                onChange={(e) => setInventorySearch(e.target.value)}
-              />
-              {filteredInventory.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-brand-border rounded-xl shadow-xl z-20 p-1.5 space-y-1">
-                  {filteredInventory.map((prod) => (
+                  {/* Quantity Stepper */}
+                  <div className="flex items-center shrink-0">
                     <button
-                      key={prod.id}
                       type="button"
-                      onClick={() => {
-                        const isPart =
-                          prod.category === 'displays' ||
-                          prod.category === 'batteries' ||
-                          prod.category === 'charging_ports' ||
-                          prod.category === 'back_glass' ||
-                          prod.category === 'cameras';
-                        handleAddItem(prod.name, isPart ? 'part' : 'accessory', String(prod.sellingPricePaise / 100));
-                        setInventorySearch('');
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-light flex items-center justify-between text-xs transition-colors"
+                      onClick={() => updateQuantity(idx, -1)}
+                      className="w-6 h-6 rounded-l-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs"
                     >
-                      <div>
-                        <div className="font-bold text-brand-navy">{prod.name}</div>
-                        <div className="text-[10px] text-brand-secondary font-mono">
-                          SKU: {prod.sku} &bull; In Stock: {prod.quantityAvailable}
-                        </div>
-                      </div>
-                      <span className="font-mono font-bold text-brand-orange text-xs">
-                        {formatPaiseToINR(prod.sellingPricePaise)}
-                      </span>
+                      <Minus className="w-3 h-3" />
                     </button>
-                  ))}
+                    <span className="w-8 h-6 bg-slate-50 border-y border-slate-200 text-center flex items-center justify-center font-mono font-bold text-xs text-slate-900">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(idx, 1)}
+                      className="w-6 h-6 rounded-r-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Line Total & Remove */}
+                  <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                    <span className="font-mono font-bold text-slate-900 text-xs w-16 text-right">
+                      {formatPaiseToINR(item.totalPaise)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(idx)}
+                      className="text-slate-300 hover:text-rose-600 p-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+              ))
+            )}
           </div>
 
-          {/* Itemized Line Items Table */}
-          <div className="bg-white p-5 rounded-3xl border border-brand-border shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-brand-border pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-brand-navy flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-brand-orange" />
-                  Bill Line Items ({items.length})
-                </h2>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
-                onClick={() => handleAddItem()}
-              >
-                Add Custom Row
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {items.map((item, index) => {
-                const rowTotalRupees = (
-                  (parseFloat(item.unitPriceRupees || '0') || 0) * Math.max(1, item.quantity)
-                ).toFixed(2);
-
-                return (
-                  <div
-                    key={item.id}
-                    className="p-3 bg-slate-50/70 rounded-2xl border border-slate-200 grid grid-cols-12 gap-3 items-center"
-                  >
-                    {/* Item Description (5 Cols) */}
-                    <div className="col-span-12 sm:col-span-5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Item #{index + 1} Description
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 11D Tempered Glass"
-                        value={item.description}
-                        onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-brand-navy font-semibold focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                      />
-                    </div>
-
-                    {/* Category Type (2 Cols) */}
-                    <div className="col-span-4 sm:col-span-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Category
-                      </label>
-                      <select
-                        value={item.type}
-                        onChange={(e) => handleUpdateItem(index, 'type', e.target.value)}
-                        className="w-full px-2 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 capitalize focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                      >
-                        <option value="accessory">Accessory</option>
-                        <option value="part">Part</option>
-                        <option value="labour">Labour</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-
-                    {/* Qty (2 Cols) */}
-                    <div className="col-span-3 sm:col-span-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Qty
-                      </label>
-                      <div className="flex items-center">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateItem(index, 'quantity', Math.max(1, item.quantity - 1))}
-                          className="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded-l-lg text-slate-600 hover:bg-slate-100 font-bold text-xs"
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleUpdateItem(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-10 h-7 text-center border-y border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateItem(index, 'quantity', item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded-r-lg text-slate-600 hover:bg-slate-100 font-bold text-xs"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Unit Price (2 Cols) */}
-                    <div className="col-span-3 sm:col-span-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Rate (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.unitPriceRupees}
-                        onChange={(e) => handleUpdateItem(index, 'unitPriceRupees', e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-mono font-bold text-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                      />
-                    </div>
-
-                    {/* Total & Delete (1 Col) */}
-                    <div className="col-span-2 sm:col-span-1 flex items-center justify-end gap-1.5 pt-4">
-                      {items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Remove row"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Bill Meta, Payment & Totals (4 Cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Unique Bill Number & Branding Card */}
-          <div className="bg-gradient-to-br from-brand-navy via-brand-navy-dark to-slate-950 text-white p-5 rounded-3xl shadow-xl border border-brand-navy-light/40 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2.5">
-                <img
-                  src="/images/logo-transparent.webp"
-                  alt="Logo"
-                  className="w-8 h-8 object-contain bg-white/10 rounded-xl p-0.5 border border-white/15"
-                />
-                <div>
-                  <div className="text-[10px] text-brand-orange font-bold uppercase tracking-wider">
-                    Counter POS Terminal
-                  </div>
-                  <div className="text-xs font-bold text-white">Rajib da Mobile Repairing</div>
-                </div>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </div>
-
-            {/* Unique Bill Number Display */}
-            <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-white/60 font-semibold uppercase tracking-wider">
-                <span>Unique Bill Number</span>
+          {/* Ticket Footer: Discounts, Calculations & Tender */}
+          <div className="p-3.5 bg-slate-50/90 border-t border-brand-border space-y-3 shrink-0">
+            {/* Quick Discount Buttons */}
+            <div className="flex items-center justify-between text-xs gap-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                Discount:
+              </span>
+              <div className="flex items-center gap-1 flex-wrap justify-end">
                 <button
                   type="button"
-                  onClick={handleRegenerateBillNumber}
-                  className="text-brand-orange-light hover:text-white flex items-center gap-1 text-[10px]"
-                  title="Generate new unique bill number"
+                  onClick={() => setDiscountRupees('0')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    discountRupees === '0' ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
                 >
-                  <RefreshCw className="w-3 h-3" />
-                  Regenerate
+                  None
                 </button>
-              </div>
-              <div className="text-xl font-mono font-black text-white tracking-wide flex items-center justify-between">
-                <span>{billNumber}</span>
-                <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full uppercase">
-                  Verified Unique
-                </span>
-              </div>
-              <div className="text-[10px] text-white/50 pt-0.5">
-                Cashier: <span className="text-white/80 font-medium">{currentUser?.displayName || 'Debasish'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Payment & Calculations Card */}
-          <div className="bg-white p-5 rounded-3xl border border-brand-border shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-brand-navy flex items-center gap-2 border-b border-brand-border pb-3">
-              <CreditCard className="w-4 h-4 text-brand-orange" />
-              Payment & Settlement
-            </h2>
-
-            {/* Discount & Tax Options */}
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-brand-text block mb-1">
-                  Counter Discount (₹)
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={discountRupees}
-                    onChange={(e) => setDiscountRupees(e.target.value)}
-                  />
-                  {/* Preset quick discount buttons */}
-                  <button
-                    type="button"
-                    onClick={() => setDiscountRupees('50')}
-                    className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-brand-orange hover:text-white text-xs font-bold text-slate-700 transition-colors"
-                  >
-                    ₹50
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountRupees('100')}
-                    className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-brand-orange hover:text-white text-xs font-bold text-slate-700 transition-colors"
-                  >
-                    ₹100
-                  </button>
-                </div>
-              </div>
-
-              {/* Tax Toggle */}
-              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-xs font-semibold text-slate-700">Add 18% GST</span>
+                <button
+                  type="button"
+                  onClick={() => setDiscountRupees('50')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    discountRupees === '50' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  ₹50 Off
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiscountRupees('100')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    discountRupees === '100' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  ₹100 Off
+                </button>
                 <input
-                  type="checkbox"
-                  checked={taxEnabled}
-                  onChange={(e) => setTaxEnabled(e.target.checked)}
-                  className="w-4 h-4 text-brand-orange rounded focus:ring-brand-orange"
+                  type="number"
+                  min="0"
+                  placeholder="₹ custom"
+                  value={discountRupees}
+                  onChange={(e) => setDiscountRupees(e.target.value)}
+                  className="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-right text-[10px] font-mono bg-white"
                 />
               </div>
             </div>
 
-            {/* Financial Summary */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
+            {/* Calculations Breakdown */}
+            <div className="space-y-1 text-xs border-y border-slate-200 py-2">
               <div className="flex justify-between text-slate-600">
                 <span>Subtotal:</span>
-                <span className="font-mono font-bold text-slate-900">{formatPaiseToINR(totals.subtotalPaise)}</span>
+                <span className="font-mono">{formatPaiseToINR(totals.subtotalPaise)}</span>
               </div>
               {totals.discountPaise > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
@@ -844,134 +1077,163 @@ export const CounterBillingPage: React.FC = () => {
                   <span className="font-mono">-{formatPaiseToINR(totals.discountPaise)}</span>
                 </div>
               )}
-              {totals.taxPaise > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>GST (18%):</span>
-                  <span className="font-mono">{formatPaiseToINR(totals.taxPaise)}</span>
+              <div className="flex justify-between text-base font-black text-brand-navy pt-1">
+                <span>Total Payable:</span>
+                <span className="font-mono text-brand-orange text-lg">
+                  {formatPaiseToINR(totals.totalPaise)}
+                </span>
+              </div>
+            </div>
+
+            {/* Payment Method Tabs */}
+            <div className="grid grid-cols-4 gap-1 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`py-1.5 rounded-xl border text-center transition-all ${
+                  paymentMethod === 'cash'
+                    ? 'bg-brand-navy text-white border-brand-navy shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                💵 Cash
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('upi')}
+                className={`py-1.5 rounded-xl border text-center transition-all ${
+                  paymentMethod === 'upi'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                📱 UPI
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('card')}
+                className={`py-1.5 rounded-xl border text-center transition-all ${
+                  paymentMethod === 'card'
+                    ? 'bg-brand-navy text-white border-brand-navy shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                💳 Card
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('pending')}
+                className={`py-1.5 rounded-xl border text-center transition-all ${
+                  paymentMethod === 'pending'
+                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                ⏳ Udhar
+              </button>
+            </div>
+
+            {/* Smart Cash Tender & Change Calculator */}
+            {paymentMethod === 'cash' && (
+              <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Cash Tendered:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCashTenderedRupees(String(totals.totalPaise / 100))}
+                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-700"
+                    >
+                      Exact
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCashTenderedRupees('500')}
+                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-700"
+                    >
+                      ₹500
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCashTenderedRupees('1000')}
+                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-700"
+                    >
+                      ₹1000
+                    </button>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={cashTenderedRupees}
+                      onChange={(e) => setCashTenderedRupees(e.target.value)}
+                      className="w-20 px-2 py-0.5 rounded border border-slate-300 text-right font-mono text-xs font-bold"
+                    />
+                  </div>
                 </div>
-              )}
-              <div className="flex justify-between text-base font-black text-brand-navy border-t border-slate-200 pt-2">
-                <span>Total Amount:</span>
-                <span className="font-mono text-brand-orange">{formatPaiseToINR(totals.totalPaise)}</span>
+
+                {cashChangeToReturnPaise > 0 && (
+                  <div className="flex justify-between items-center bg-emerald-50 text-emerald-800 px-2 py-1 rounded-lg border border-emerald-200 font-bold">
+                    <span>Change to Return:</span>
+                    <span className="font-mono text-sm">{formatPaiseToINR(cashChangeToReturnPaise)}</span>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
-            {/* Payment Method Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-brand-text block">
-                Payment Mode
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`p-2.5 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    paymentMethod === 'cash'
-                      ? 'bg-brand-navy text-white border-brand-navy shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>💵 Cash</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('upi')}
-                  className={`p-2.5 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    paymentMethod === 'upi'
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>📱 UPI QR</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`p-2.5 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    paymentMethod === 'card'
-                      ? 'bg-brand-navy text-white border-brand-navy shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>💳 Card POS</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('pending')}
-                  className={`p-2.5 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    paymentMethod === 'pending'
-                      ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>⏳ Unpaid / Credit</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Amount Paid & Balance Due */}
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Amount Paid (₹)"
-                type="number"
-                min="0"
-                value={amountPaidRupees}
-                onChange={(e) => setAmountPaidRupees(e.target.value)}
-              />
-              <div>
-                <label className="text-xs font-semibold text-brand-text block mb-1">
-                  Balance Due
-                </label>
-                <div
-                  className={`px-3 py-2 rounded-xl border font-mono font-bold text-xs flex items-center justify-between ${
-                    balanceDuePaise > 0
-                      ? 'bg-rose-50 text-rose-700 border-rose-200'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  }`}
-                >
-                  <span>{formatPaiseToINR(balanceDuePaise)}</span>
-                  {balanceDuePaise === 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+            {/* Live UPI QR for Customer Scanning */}
+            {paymentMethod === 'upi' && (
+              <div className="p-2 bg-white rounded-xl border border-emerald-200 flex items-center justify-between gap-2">
+                <div className="text-[11px] leading-tight">
+                  <div className="font-bold text-emerald-800 flex items-center gap-1">
+                    <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                    Customer Scan & Pay
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    VPA: <span className="font-mono font-semibold">{upiPayee}</span>
+                  </div>
                 </div>
+                <img src={upiQrUrl} alt="UPI QR" className="w-14 h-14 object-contain rounded border border-slate-200" />
               </div>
-            </div>
+            )}
 
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-2">
+            {/* High-Velocity Checkout Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <Button
                 variant="glow"
-                size="lg"
-                className="w-full font-bold shadow-md"
+                size="md"
+                className="w-full font-black text-xs py-2.5 shadow-md"
                 leftIcon={<Printer className="w-4 h-4" />}
                 isLoading={saving}
-                onClick={() => handleGenerateBill(true)}
+                onClick={() => handleCheckout(true)}
               >
-                Generate & Print Bill
+                Pay & Print
               </Button>
 
               <Button
-                variant="outline"
+                variant="primary"
                 size="md"
-                className="w-full text-xs"
+                className="w-full font-bold text-xs py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                leftIcon={<Share2 className="w-4 h-4" />}
                 isLoading={saving}
-                onClick={() => handleGenerateBill(false)}
+                onClick={() => handleCheckout(false)}
               >
-                Save Bill without Printing
+                Quick Checkout
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bill Print Modal */}
+      {/* ============================================================== */}
+      {/* MODALS: RECEIPT PRINT, PARKED CARTS, REGISTER SUMMARY          */}
+      {/* ============================================================== */}
+
+      {/* Branded Bill Print Modal */}
       {printModalInvoice && settings && (
         <Modal
           isOpen={Boolean(printModalInvoice)}
           onClose={() => {
             setPrintModalInvoice(null);
-            resetForm();
+            clearCart();
           }}
           title="Official Counter Bill Receipt"
           description={`Bill No: ${printModalInvoice.invoiceNumber}`}
@@ -982,73 +1244,157 @@ export const CounterBillingPage: React.FC = () => {
             settings={settings}
             onClose={() => {
               setPrintModalInvoice(null);
-              resetForm();
+              clearCart();
             }}
           />
         </Modal>
       )}
 
-      {/* Recent Bills Modal / Drawer */}
+      {/* Held / Parked Carts Modal */}
       <Modal
-        isOpen={showRecentDrawer}
-        onClose={() => setShowRecentDrawer(false)}
-        title="Recently Issued Counter Bills"
-        description="View, reprint, or share previously generated customer bills"
-        maxWidth="4xl"
+        isOpen={showParkedModal}
+        onClose={() => setShowParkedModal(false)}
+        title="Held / Parked POS Carts"
+        description="Resume tickets that were held while serving another customer"
+        maxWidth="lg"
       >
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-          {invoices.length === 0 ? (
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          {parkedCarts.length === 0 ? (
             <div className="p-8 text-center text-xs text-brand-secondary">
-              No bills recorded yet. Generate your first counter bill above.
+              No parked carts currently on hold.
             </div>
           ) : (
-            invoices.slice(0, 15).map((inv) => (
+            parkedCarts.map((p) => (
               <div
-                key={inv.id}
-                className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-white transition-colors"
+                key={p.id}
+                className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 text-xs"
               >
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-brand-navy">{inv.invoiceNumber}</span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        inv.status === 'paid'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : inv.status === 'partial'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      {inv.status}
-                    </span>
-                    <span className="text-[10px] text-brand-secondary">{formatDate(inv.issuedAt)}</span>
-                  </div>
-                  <div className="font-bold text-slate-800 mt-1">
-                    {inv.customerName} &bull; <span className="font-normal text-slate-600">{formatPhoneNumber(inv.customerPhone)}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                    Total: <span className="font-bold text-slate-900">{formatPaiseToINR(inv.totalPaise)}</span> &bull; Paid:{' '}
-                    <span className="text-emerald-700 font-bold">{formatPaiseToINR(inv.amountPaidPaise)}</span>
+                  <div className="font-bold text-brand-navy">{p.customerName}</div>
+                  <div className="text-[11px] text-brand-secondary font-mono">
+                    {p.customerPhone || 'Walk-in'} &bull; {p.items.length} items &bull;{' '}
+                    {formatDate(p.createdAt)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="primary"
-                    leftIcon={<Printer className="w-3.5 h-3.5" />}
-                    onClick={() => {
-                      setShowRecentDrawer(false);
-                      setPrintModalInvoice(inv);
-                    }}
+                    leftIcon={<PlayCircle className="w-3.5 h-3.5" />}
+                    onClick={() => handleResumeCart(p)}
                   >
-                    View & Print
+                    Resume
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setParkedCarts((prev) => prev.filter((item) => item.id !== p.id))}
+                    className="p-1.5 text-slate-400 hover:text-rose-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
+      </Modal>
+
+      {/* Day Register / Cash Drawer Shift Summary */}
+      <Modal
+        isOpen={showRegisterSummary}
+        onClose={() => setShowRegisterSummary(false)}
+        title="Today's Cash Register & Sales Summary"
+        description="Shift balance and sales tally for Rajib da Mobile Repairing House"
+        maxWidth="md"
+      >
+        <div className="space-y-4 text-xs">
+          <div className="p-4 bg-brand-light rounded-2xl border border-brand-border space-y-3">
+            <div className="flex justify-between items-center text-sm font-bold text-brand-navy">
+              <span>Bills Issued Today:</span>
+              <span className="font-mono text-base font-black">{todayStats.count}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600">Total Sales Value:</span>
+              <span className="font-mono font-bold text-slate-900">
+                {formatPaiseToINR(todayStats.totalSalesPaise)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-emerald-700">
+              <span className="font-bold">Total Cash & Digital Collected:</span>
+              <span className="font-mono font-bold text-emerald-800">
+                {formatPaiseToINR(todayStats.totalCollectedPaise)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-rose-700">
+              <span className="font-bold">Unpaid / Balance Due (Udhar):</span>
+              <span className="font-mono font-bold text-rose-800">
+                {formatPaiseToINR(todayStats.totalDuePaise)}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-[10px] text-slate-500 text-center">
+            Register Operator: <span className="font-bold">{currentUser?.displayName || 'Debasish'}</span> &bull;{' '}
+            {formatDate(new Date().toISOString())}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Custom Item Modal */}
+      <Modal
+        isOpen={showCustomItemModal}
+        onClose={() => setShowCustomItemModal(false)}
+        title="Add Custom Product or Service to Ticket"
+        description="Quick punch for unlisted items or special repair service charges"
+        maxWidth="md"
+      >
+        <form onSubmit={handleAddCustomItem} className="space-y-4">
+          <Input
+            label="Item Description *"
+            placeholder="e.g. UV Glue Drying or Special Phone Stand"
+            required
+            autoFocus
+            value={customItemDesc}
+            onChange={(e) => setCustomItemDesc(e.target.value)}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-brand-text mb-1">
+                Category Type
+              </label>
+              <select
+                value={customItemType}
+                onChange={(e) => setCustomItemType(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-xl border border-brand-border bg-white text-xs text-slate-800 capitalize focus:outline-none"
+              >
+                <option value="accessory">Accessory</option>
+                <option value="part">Part</option>
+                <option value="labour">Labour / Service</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <Input
+              label="Price in Rupees (₹) *"
+              type="number"
+              min="0"
+              required
+              value={customItemPrice}
+              onChange={(e) => setCustomItemPrice(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setShowCustomItemModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Add to Ticket
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
