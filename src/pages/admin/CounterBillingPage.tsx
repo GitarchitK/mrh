@@ -499,7 +499,7 @@ export const CounterBillingPage: React.FC = () => {
   const upiPayee = '9732789938@upi';
   const totalRupeesStr = (totals.totalPaise / 100).toFixed(2);
   const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-    `upi://pay?pa=${upiPayee}&pn=Rajib%20da%20Mobile%20Repairing%20House&am=${totalRupeesStr}&cu=INR&tn=POS%20${billNumber}`
+    `upi://pay?pa=${upiPayee}&pn=Mobile%20Repairing%20House&am=${totalRupeesStr}&cu=INR&tn=POS%20${billNumber}`
   )}`;
 
   // Checkout / Complete Transaction
@@ -1306,7 +1306,7 @@ export const CounterBillingPage: React.FC = () => {
         isOpen={showRegisterSummary}
         onClose={() => setShowRegisterSummary(false)}
         title="Today's Cash Register & Sales Summary"
-        description="Shift balance and sales tally for Rajib da Mobile Repairing House"
+        description="Shift balance and sales tally for Mobile Repairing House"
         maxWidth="md"
       >
         <div className="space-y-4 text-xs">

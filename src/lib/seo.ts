@@ -6,7 +6,7 @@
 export const BUSINESS_INFO = {
   name: "Mobile Repairing House",
   legalName: "Mobile Repairing House",
-  alternateNames: ["Rajib da Mobile Repairing House", "Mobile Repairing House Dunlop", "MRH Kolkata"],
+  alternateNames: ["Mobile Repairing House Dunlop", "MRH Kolkata", "Mobile Repairing House"],
   owner: "Debasish",
   phone: "+91 97327 89938",
   whatsapp: "+91 97327 89938",

@@ -1,5 +1,5 @@
 // Multi-lingual Translation Service (Bengali, Hindi, English -> English)
-// Designed for Mobile Repair Shop Counter CRM (Rajib da Mobile Repairing House)
+// Designed for Mobile Repair Shop Counter CRM (Mobile Repairing House)
 
 const BENGALI_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 const DEVANAGARI_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];

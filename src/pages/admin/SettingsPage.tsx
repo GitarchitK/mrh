@@ -228,7 +228,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <p className="text-xs text-brand-secondary">
-            Rajib da Mobile Repairing House is situated in Dunlop, West Bengal where walk-in customers and staff speak in Bengali (বাংলা), Hindi (हिन्दी), or English. Voice input recognizes spoken audio in any of these three languages and automatically translates and structures it into standardized English CRM records.
+            Mobile Repairing House is situated in Dunlop, West Bengal where walk-in customers and staff speak in Bengali (বাংলা), Hindi (हिन्दी), or English. Voice input recognizes spoken audio in any of these three languages and automatically translates and structures it into standardized English CRM records.
           </p>
 
           <div>

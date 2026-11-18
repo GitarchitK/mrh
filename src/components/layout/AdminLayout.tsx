@@ -160,10 +160,10 @@ export const AdminLayout: React.FC = () => {
             {!isCollapsed && (
               <div className="flex flex-col truncate">
                 <span className="font-black text-sm tracking-tight text-white group-hover:text-brand-orange-light transition-colors truncate">
-                  Rajib da MRH
+                  Mobile Repairing House
                 </span>
                 <span className="text-[10px] text-white/60 uppercase font-semibold tracking-wider truncate">
-                  Counter & Workshop CRM
+                  Dunlop &bull; Counter CRM
                 </span>
               </div>
             )}
@@ -315,7 +315,7 @@ export const AdminLayout: React.FC = () => {
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping hidden sm:inline-block shrink-0" />
               <div className="text-sm font-bold text-brand-navy tracking-tight truncate">
-                {settings.businessName || 'Rajib da Mobile Repairing House'}{' '}
+                {settings.businessName || 'Mobile Repairing House'}{' '}
                 <span className="text-brand-secondary font-normal">&mdash; Counter CRM</span>
               </div>
             </div>
@@ -402,7 +402,7 @@ export const AdminLayout: React.FC = () => {
                     alt="MRH Logo"
                     className="w-8 h-8 object-contain bg-white/10 rounded-lg p-0.5 border border-white/10"
                   />
-                  <span className="font-extrabold text-sm tracking-tight text-white">Rajib da MRH CRM</span>
+                  <span className="font-extrabold text-sm tracking-tight text-white">Mobile Repairing House</span>
                 </div>
                 <button
                   type="button"
