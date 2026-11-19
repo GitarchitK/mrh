@@ -69,19 +69,6 @@ import { formatPaiseToINR, rupeesToPaise, calculateTotalsPaise } from '../../lib
 import { formatDate, formatDateTime, formatPhoneNumber } from '../../lib/utils';
 import { generateBillNumber, generatePaymentReference } from '../../lib/reference';
 
-// Counter Repair Services Catalog
-const COUNTER_SERVICES = [
-  { id: 'srv-screen-guard', name: 'Screen Guard Pasting Service', category: 'services', pricePaise: 5000, type: 'labour' as const, badge: 'Quick Service' },
-  { id: 'srv-port-clean', name: 'Charging Port Dust Cleaning', category: 'services', pricePaise: 10000, type: 'labour' as const, badge: '5 Mins' },
-  { id: 'srv-mic-speaker', name: 'Ear Speaker & Mic Deep Cleaning', category: 'services', pricePaise: 10000, type: 'labour' as const, badge: 'Audio Fix' },
-  { id: 'srv-battery-labour', name: 'Battery Pasting & Replacement Labour', category: 'services', pricePaise: 25000, type: 'labour' as const, badge: 'Workshop' },
-  { id: 'srv-software-reset', name: 'Software Reset & Pattern Unlock', category: 'services', pricePaise: 35000, type: 'labour' as const, badge: 'Software' },
-  { id: 'srv-os-flash', name: 'OS Flashing / Bootloop Recovery', category: 'services', pricePaise: 60000, type: 'labour' as const, badge: 'Software' },
-  { id: 'srv-diag', name: 'Motherboard Diagnostic Charge', category: 'services', pricePaise: 15000, type: 'labour' as const, badge: 'Inspection' },
-  { id: 'srv-back-glass', name: 'Back Glass Laser Removal & Pasting', category: 'services', pricePaise: 40000, type: 'labour' as const, badge: 'Workshop' },
-  { id: 'srv-camera-lens', name: 'Camera Outer Glass Replacement', category: 'services', pricePaise: 20000, type: 'labour' as const, badge: 'Quick Fix' },
-];
-
 interface POSCartItem {
   id: string;
   productId?: string;
@@ -129,7 +116,7 @@ export const CounterBillingPage: React.FC = () => {
 
   // POS State
   const [billNumber, setBillNumber] = useState('');
-  const [customerName, setCustomerName] = useState(prefillName || 'Walk-in Customer');
+  const [customerName, setCustomerName] = useState(prefillName || '');
   const [customerPhone, setCustomerPhone] = useState(prefillPhone || '');
   const [customerId, setCustomerId] = useState(prefillCustId || '');
   const [selectedJobId, setSelectedJobId] = useState(prefillJobId);
@@ -163,7 +150,7 @@ export const CounterBillingPage: React.FC = () => {
   const [showCustomItemModal, setShowCustomItemModal] = useState(false);
   const [customItemDesc, setCustomItemDesc] = useState('');
   const [customItemType, setCustomItemType] = useState<'accessory' | 'part' | 'labour' | 'other'>('accessory');
-  const [customItemPrice, setCustomItemPrice] = useState('100');
+  const [customItemPrice, setCustomItemPrice] = useState('');
 
   // Load Data
   const loadData = async () => {
@@ -241,75 +228,59 @@ export const CounterBillingPage: React.FC = () => {
     setPhoneSearchMatches([]);
   };
 
-  // Unified Product Catalog for POS
+  // Category metadata for POS display
+  const CATEGORY_META: Record<string, { label: string; icon: string }> = {
+    all: { label: 'All Items', icon: '📦' },
+    displays: { label: 'Displays & Touch', icon: '📱' },
+    batteries: { label: 'Batteries', icon: '🔋' },
+    charging_ports: { label: 'Charging Ports', icon: '⚡' },
+    cables: { label: 'Cables & Chargers', icon: '🧵' },
+    earphones: { label: 'Audio & Earphones', icon: '🎧' },
+    power_banks: { label: 'Power Banks', icon: '🔋' },
+    back_glass: { label: 'Back Glass', icon: '🛡️' },
+    cameras: { label: 'Cameras', icon: '📷' },
+    protection: { label: 'Tempered & Covers', icon: '🛡️' },
+    other: { label: 'Other Items', icon: '📦' },
+  };
+
+  // Unified Product Catalog for POS - Only real products from inventory
   const allPOSProducts = useMemo(() => {
-    const list: {
-      id: string;
-      name: string;
-      category: string;
-      pricePaise: number;
-      type: 'accessory' | 'part' | 'labour' | 'other';
-      badge?: string;
-      stock?: number;
-      sku?: string;
-      brand?: string;
-      serialNumber?: string;
-    }[] = [];
-
-    // 1. Add services
-    COUNTER_SERVICES.forEach((srv) => {
-      list.push({
-        id: srv.id,
-        name: srv.name,
-        category: 'services',
-        pricePaise: srv.pricePaise,
-        type: srv.type,
-        badge: srv.badge,
-        stock: 999,
-      });
-    });
-
-    // 2. Add real inventory products from PostgreSQL database
-    inventory.forEach((inv) => {
-      list.push({
-        id: inv.id,
-        name: inv.name,
-        category: inv.category,
-        pricePaise: inv.sellingPricePaise,
-        type:
-          inv.category === 'displays' || inv.category === 'batteries' || inv.category === 'charging_ports'
-            ? 'part'
-            : 'accessory',
-        badge: `In Stock: ${inv.quantityAvailable}`,
-        stock: inv.quantityAvailable,
-        sku: inv.sku,
-        brand: inv.brand,
-        serialNumber: inv.serialNumber,
-      });
-    });
-
-    return list;
+    return inventory.map((inv) => ({
+      id: inv.id,
+      name: inv.name,
+      category: inv.category,
+      pricePaise: inv.sellingPricePaise,
+      type: (
+        inv.category === 'displays' ||
+        inv.category === 'batteries' ||
+        inv.category === 'charging_ports' ||
+        inv.category === 'back_glass' ||
+        inv.category === 'cameras'
+          ? 'part'
+          : 'accessory'
+      ) as 'accessory' | 'part' | 'labour' | 'other',
+      badge: `In Stock: ${inv.quantityAvailable}`,
+      stock: inv.quantityAvailable,
+      sku: inv.sku,
+      brand: inv.brand,
+      serialNumber: inv.serialNumber,
+    }));
   }, [inventory]);
+
+  // Dynamically compute categories that actually exist in available inventory
+  const categories = useMemo(() => {
+    const presentCats = new Set<string>();
+    allPOSProducts.forEach((p) => {
+      if (p.category) presentCats.add(p.category);
+    });
+    return ['all', ...Array.from(presentCats)];
+  }, [allPOSProducts]);
 
   // Filtered Catalog by Category & Search
   const filteredCatalog = useMemo(() => {
     return allPOSProducts.filter((item) => {
-      if (selectedCategory === 'popular') {
-        const isPopular =
-          item.category === 'services' ||
-          item.name.toLowerCase().includes('tempered') ||
-          item.name.toLowerCase().includes('charger') ||
-          item.name.toLowerCase().includes('cable') ||
-          item.name.toLowerCase().includes('display') ||
-          item.name.toLowerCase().includes('battery');
-        if (!isPopular) return false;
-      } else if (selectedCategory !== 'all') {
-        if (selectedCategory === 'services' && item.category !== 'services') return false;
-        if (selectedCategory === 'chargers' && item.category !== 'chargers') return false;
-        if (selectedCategory === 'cables' && item.category !== 'cables') return false;
-        if (selectedCategory === 'protection' && item.category !== 'protection' && !item.name.toLowerCase().includes('tempered') && !item.name.toLowerCase().includes('cover') && !item.name.toLowerCase().includes('case')) return false;
-        if (selectedCategory === 'audio' && item.category !== 'earphones' && item.category !== 'headphones') return false;
-        if (selectedCategory === 'spares' && item.category !== 'spares' && item.category !== 'displays' && item.category !== 'batteries' && item.category !== 'charging_ports') return false;
+      if (selectedCategory !== 'all' && item.category !== selectedCategory) {
+        return false;
       }
 
       if (searchQuery.trim()) {
@@ -386,7 +357,7 @@ export const CounterBillingPage: React.FC = () => {
     setDiscountRupees('0');
     setCashTenderedRupees('');
     setPaymentRef('');
-    setCustomerName('Walk-in Customer');
+    setCustomerName('');
     setCustomerPhone('');
     setCustomerId('');
     setSelectedJobId('');
@@ -425,8 +396,8 @@ export const CounterBillingPage: React.FC = () => {
 
     const newParked: ParkedCart = {
       id: `parked-${Date.now()}`,
-      customerName: customerName || 'Walk-in Customer',
-      customerPhone,
+      customerName: customerName.trim() || 'Walk-in Customer',
+      customerPhone: customerPhone.trim(),
       items: cart,
       discountRupees,
       notes,
@@ -479,7 +450,9 @@ export const CounterBillingPage: React.FC = () => {
   const balanceDuePaise = Math.max(0, totals.totalPaise - actualAmountPaidPaise);
 
   // Dynamic UPI URL & QR
-  const upiPayee = '9732789938@upi';
+  const upiPayee = settings?.phone
+    ? `${settings.phone.replace(/\D/g, '')}@upi`
+    : '9732789938@upi';
   const totalRupeesStr = (totals.totalPaise / 100).toFixed(2);
   const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
     `upi://pay?pa=${upiPayee}&pn=Mobile%20Repairing%20House&am=${totalRupeesStr}&cu=INR&tn=POS%20${billNumber}`
@@ -517,7 +490,7 @@ export const CounterBillingPage: React.FC = () => {
         jobNumber: selectedJobNumber || undefined,
         customerId: customerId || 'cust_walkin',
         customerName: customerName.trim() || 'Walk-in Customer',
-        customerPhone: customerPhone.trim() || '9732789938',
+        customerPhone: customerPhone.trim() || '',
         items: lineItems,
         subtotalPaise: totals.subtotalPaise,
         discountPaise: totals.discountPaise,
@@ -583,7 +556,7 @@ export const CounterBillingPage: React.FC = () => {
       type: customItemType,
     });
     setCustomItemDesc('');
-    setCustomItemPrice('100');
+    setCustomItemPrice('');
     setShowCustomItemModal(false);
   };
 
@@ -724,160 +697,144 @@ export const CounterBillingPage: React.FC = () => {
 
             {/* Category Scroll Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('all')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'all'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                All Items ({allPOSProducts.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('popular')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all flex items-center gap-1 ${
-                  selectedCategory === 'popular'
-                    ? 'bg-brand-orange text-white shadow-glow-orange'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <Zap className="w-3 h-3" />
-                Popular
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('protection')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'protection'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🛡️ Tempered & Covers
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('chargers')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'chargers'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🔌 Fast Chargers
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('cables')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'cables'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🧵 Cables
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('services')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'services'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🛠️ Counter Services
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('audio')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'audio'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🎧 Audio
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('spares')}
-                className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
-                  selectedCategory === 'spares'
-                    ? 'bg-brand-navy text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                📱 Spares
-              </button>
+              {categories.map((catKey) => {
+                const meta = CATEGORY_META[catKey] || { label: catKey.replace('_', ' '), icon: '🏷️' };
+                const count = catKey === 'all'
+                  ? allPOSProducts.length
+                  : allPOSProducts.filter((p) => p.category === catKey).length;
+                const isSelected = selectedCategory === catKey;
+
+                return (
+                  <button
+                    key={catKey}
+                    type="button"
+                    onClick={() => setSelectedCategory(catKey)}
+                    className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-brand-navy text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{meta.icon}</span>
+                    <span>{meta.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Interactive POS Product Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
-            {filteredCatalog.map((prod) => {
-              const inCartItem = cart.find((c) => c.description === prod.name);
-
-              return (
-                <button
-                  key={prod.id}
-                  type="button"
-                  onClick={() => addToCart(prod)}
-                  className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all active:scale-95 group relative overflow-hidden min-h-[105px] ${
-                    inCartItem
-                      ? 'bg-brand-orange/5 border-brand-orange/40 shadow-xs'
-                      : 'bg-white hover:bg-slate-50 border-brand-border shadow-2xs hover:border-slate-300'
-                  }`}
+          {allPOSProducts.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-brand-border p-8 text-center space-y-3">
+              <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto" />
+              <div className="font-bold text-slate-800 text-sm">No Products in Inventory</div>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No inventory items found. Add products in Inventory or use <strong>Custom Item</strong> above to bill any unlisted item or service directly.
+              </p>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCustomItemModal(true)}
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
                 >
-                  {/* In Cart Indicator Badge */}
-                  {inCartItem && (
-                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
-                      {inCartItem.quantity}
-                    </span>
-                  )}
+                  Custom Item
+                </Button>
+                <Link to="/admin/inventory">
+                  <Button size="sm" variant="primary">
+                    Manage Inventory
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : filteredCatalog.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-brand-border p-8 text-center space-y-2">
+              <Search className="w-8 h-8 text-slate-300 mx-auto" />
+              <div className="font-bold text-slate-800 text-xs">No matching products found</div>
+              <p className="text-xs text-slate-500">
+                Try clearing your search query or switching category filters.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('all');
+                }}
+                className="text-xs text-brand-orange font-bold hover:underline"
+              >
+                Reset filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+              {filteredCatalog.map((prod) => {
+                const inCartItem = cart.find((c) => c.description === prod.name);
 
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {prod.type}
+                return (
+                  <button
+                    key={prod.id}
+                    type="button"
+                    onClick={() => addToCart(prod)}
+                    className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all active:scale-95 group relative overflow-hidden min-h-[105px] ${
+                      inCartItem
+                        ? 'bg-brand-orange/5 border-brand-orange/40 shadow-xs'
+                        : 'bg-white hover:bg-slate-50 border-brand-border shadow-2xs hover:border-slate-300'
+                    }`}
+                  >
+                    {/* In Cart Indicator Badge */}
+                    {inCartItem && (
+                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                        {inCartItem.quantity}
                       </span>
-                      {prod.brand && (
-                        <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-100">
-                          {prod.brand}
-                        </span>
-                      )}
-                      {prod.badge && (
-                        <span className="text-[9px] font-medium text-brand-orange truncate max-w-[100px]">
-                          {prod.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-brand-navy">
-                      {prod.name}
-                    </div>
-                    {prod.serialNumber && (
-                      <div className="text-[9px] font-mono text-indigo-700 font-semibold truncate mt-0.5">
-                        S/N: {prod.serialNumber}
-                      </div>
                     )}
-                  </div>
 
-                  <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
-                    <span className="text-xs font-black font-mono text-brand-orange">
-                      {formatPaiseToINR(prod.pricePaise)}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-navy flex items-center gap-0.5">
-                      <Plus className="w-3 h-3" />
-                      Add
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {prod.type}
+                        </span>
+                        {prod.brand && (
+                          <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                            {prod.brand}
+                          </span>
+                        )}
+                        {prod.badge && (
+                          <span className="text-[9px] font-medium text-brand-orange truncate max-w-[100px]">
+                            {prod.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-brand-navy">
+                        {prod.name}
+                      </div>
+                      {prod.serialNumber && (
+                        <div className="text-[9px] font-mono text-indigo-700 font-semibold truncate mt-0.5">
+                          S/N: {prod.serialNumber}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
+                      <span className="text-xs font-black font-mono text-brand-orange">
+                        {formatPaiseToINR(prod.pricePaise)}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-navy flex items-center gap-0.5">
+                        <Plus className="w-3 h-3" />
+                        Add
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* ============================================================== */}
@@ -944,7 +901,7 @@ export const CounterBillingPage: React.FC = () => {
 
               <input
                 type="text"
-                placeholder="Customer Name..."
+                placeholder="Walk-in Customer (or enter name)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-brand-orange font-semibold"
@@ -1374,6 +1331,7 @@ export const CounterBillingPage: React.FC = () => {
               label="Price in Rupees (₹) *"
               type="number"
               min="0"
+              placeholder="0"
               required
               value={customItemPrice}
               onChange={(e) => setCustomItemPrice(e.target.value)}

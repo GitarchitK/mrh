@@ -72,7 +72,7 @@ Thank you for trusting ${shopName}!`;
   };
 
   // UPI Payment Link & QR Code
-  const upiPayee = '9732789938@upi';
+  const upiPayee = settings?.phone ? `${settings.phone.replace(/\D/g, '')}@upi` : '9732789938@upi';
   const totalRupees = (invoice.totalPaise / 100).toFixed(2);
   const upiUrl = `upi://pay?pa=${upiPayee}&pn=Mobile%20Repairing%20House&am=${totalRupees}&cu=INR&tn=Bill%20${invoice.invoiceNumber}`;
   const qrCodeImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(upiUrl)}`;
@@ -328,10 +328,12 @@ Thank you for trusting ${shopName}!`;
               <div className="text-xs font-black text-slate-900 mt-0.5">
                 {invoice.customerName}
               </div>
-              <div className="text-[10px] font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
-                <Smartphone className="w-3 h-3 text-slate-400" />
-                {formatPhoneNumber(invoice.customerPhone)}
-              </div>
+              {invoice.customerPhone ? (
+                <div className="text-[10px] font-semibold text-slate-600 flex items-center gap-1 mt-0.5">
+                  <Smartphone className="w-3 h-3 text-slate-400" />
+                  {formatPhoneNumber(invoice.customerPhone)}
+                </div>
+              ) : null}
               {invoice.notes && (
                 <div className="text-[9px] text-slate-500 italic mt-0.5">
                   Note: &ldquo;{invoice.notes}&rdquo;

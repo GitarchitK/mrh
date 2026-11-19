@@ -540,9 +540,10 @@ export const InventoryPage: React.FC = () => {
         )}
       </div>
 
-      {/* Add / Edit Product Modal */}
+      {/* Add / Edit Product Modal - Full width & wide 2-column layout */}
       <Modal
         isOpen={productModalOpen}
+        maxWidth="6xl"
         onClose={() => {
           setProductModalOpen(false);
           resetProductForm();
@@ -554,11 +555,15 @@ export const InventoryPage: React.FC = () => {
             : 'Register a new component for repair jobs or retail sale with brand & serial tracking.'
         }
       >
-        <div className="mb-4 p-3 bg-brand-light rounded-xl border border-brand-border flex items-center justify-between text-xs">
+        {/* Compact Voice Fill Banner */}
+        <div className="mb-3 px-3.5 py-2 bg-gradient-to-r from-brand-orange/10 via-amber-500/10 to-transparent rounded-xl border border-brand-orange/20 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-brand-orange" />
-            <span className="text-brand-navy font-semibold">
-              Fill entire form by voice in বাংলা, हिन्दी or English:
+            <Sparkles className="w-4 h-4 text-brand-orange shrink-0" />
+            <span className="text-brand-navy font-bold">
+              Voice Fill AI:
+            </span>
+            <span className="text-slate-600 hidden sm:inline">
+              Speak part name, brand, SKU and prices in বাংলা, हिन्दी or English
             </span>
           </div>
           <Button
@@ -567,46 +572,58 @@ export const InventoryPage: React.FC = () => {
             variant="outline"
             leftIcon={<Mic className="w-3.5 h-3.5 text-brand-orange" />}
             onClick={() => openAssistant('inventory')}
+            className="text-xs shrink-0 py-1"
           >
             Voice Fill
           </Button>
         </div>
 
-        <form onSubmit={handleSaveProduct} className="space-y-4">
-          <Input
-            label="Product / Part Name *"
-            required
-            placeholder="e.g. Redmi Note 10 Pro Display (AMOLED) or iPhone 13 Battery"
-            enableVoice
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <form onSubmit={handleSaveProduct} className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+            {/* LEFT COLUMN: Product Identity, Category & Brand */}
+            <div className="space-y-3">
+              <Input
+                label="Product / Part Name *"
+                required
+                placeholder="e.g. Redmi Note 10 Pro Display (AMOLED) or iPhone 13 Battery"
+                enableVoice
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
 
-          {/* Brand Selector Section */}
-          <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-brand-navy uppercase tracking-wider flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-brand-orange" />
-                <span>Choose Brand / Manufacturer *</span>
-              </label>
-              {brandSelection !== 'custom' && (
-                <span className="text-[11px] font-semibold text-slate-500">
-                  Selected: <strong className="text-brand-navy">{brandSelection}</strong>
-                </span>
-              )}
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Select
+                  label="Category *"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="displays">Displays & Touchscreen</option>
+                  <option value="batteries">Batteries</option>
+                  <option value="charging_ports">Charging Ports</option>
+                  <option value="cables">Cables & Chargers</option>
+                  <option value="earphones">Earphones & Audio</option>
+                  <option value="power_banks">Power Banks</option>
+                  <option value="back_glass">Back Glass</option>
+                  <option value="cameras">Cameras</option>
+                  <option value="other">Other Components</option>
+                </Select>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Select
-                value={brandSelection}
-                onChange={(e) => setBrandSelection(e.target.value)}
-              >
-                {BRAND_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </Select>
+                <div>
+                  <label className="block text-xs font-semibold text-brand-text mb-1">
+                    Brand / Manufacturer *
+                  </label>
+                  <Select
+                    value={brandSelection}
+                    onChange={(e) => setBrandSelection(e.target.value)}
+                  >
+                    {BRAND_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
 
               {brandSelection === 'custom' ? (
                 <Input
@@ -617,8 +634,8 @@ export const InventoryPage: React.FC = () => {
                   enableVoice
                 />
               ) : (
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase w-full">Quick Brand Pick:</span>
+                <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Quick Brand:</span>
                   {QUICK_BRAND_PILLS.map((pill) => (
                     <button
                       key={pill}
@@ -639,103 +656,111 @@ export const InventoryPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* RIGHT COLUMN: Identifiers, Stock & Pricing */}
+            <div className="space-y-3">
+              {/* SKU and Serial Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="SKU Identifier *"
+                  required
+                  placeholder="e.g. DSP-REDMI-N10P"
+                  enableVoice
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value.toUpperCase())}
+                />
+
+                <Input
+                  label="Serial / IMEI (Optional)"
+                  placeholder="e.g. SN-A2442 or IMEI"
+                  enableVoice
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
+                />
+              </div>
+
+              {/* Quantity & Low Stock Alert */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={editingProduct ? "In-Hand Stock Quantity (Units) *" : "Initial Quantity in Hand *"}
+                  type="number"
+                  min="0"
+                  required
+                  value={initialQty}
+                  onChange={(e) => setInitialQty(e.target.value)}
+                />
+
+                <Input
+                  label="Low Stock Alert Threshold *"
+                  type="number"
+                  min="1"
+                  required
+                  value={lowStockThresh}
+                  onChange={(e) => setLowStockThresh(e.target.value)}
+                />
+              </div>
+
+              {/* Selling Price & Wholesale Cost */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Selling Price (₹) *"
+                  type="number"
+                  placeholder="e.g. 2400"
+                  required
+                  value={sellingRupees}
+                  onChange={(e) => setSellingRupees(e.target.value)}
+                />
+
+                {isOwner ? (
+                  <Input
+                    label="Wholesale Cost (₹) (Private)"
+                    type="number"
+                    placeholder="e.g. 1500"
+                    value={costRupees}
+                    onChange={(e) => setCostRupees(e.target.value)}
+                  />
+                ) : (
+                  <div />
+                )}
+              </div>
+
+              {/* Real-time Profit Preview */}
+              {isOwner && sellingRupees && costRupees && Number(sellingRupees) > Number(costRupees) && (
+                <div className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center justify-between">
+                  <span>Estimated Margin:</span>
+                  <span className="font-mono font-bold text-emerald-700">
+                    +₹{Number(sellingRupees) - Number(costRupees)} ({Math.round(((Number(sellingRupees) - Number(costRupees)) / Number(sellingRupees)) * 100)}% margin)
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* SKU and Serial Number */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="SKU Identifier *"
-              required
-              placeholder="e.g. DSP-REDMI-N10P"
-              enableVoice
-              value={sku}
-              onChange={(e) => setSku(e.target.value.toUpperCase())}
-            />
+          {/* Action Footer */}
+          <div className="pt-3 flex items-center justify-between border-t border-slate-100 mt-2">
+            <div className="text-xs text-slate-500 hidden sm:block">
+              {editingProduct ? (
+                <span>Editing: <strong className="text-brand-navy">{editingProduct.name}</strong></span>
+              ) : (
+                <span>New inventory stock is instantly available on the <strong>Billing POS terminal</strong></span>
+              )}
+            </div>
 
-            <Input
-              label="Serial Number / IMEI / Batch Code (Optional)"
-              placeholder="e.g. SN-A2442-998812 or 864293048123456"
-              enableVoice
-              value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
-              helperText="Unique barcode / IMEI / serial for tracking warranty & replacements"
-            />
-          </div>
-
-          {/* Category & Quantity in Hand */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label="Category *"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="displays">Displays & Touchscreen</option>
-              <option value="batteries">Batteries</option>
-              <option value="charging_ports">Charging Ports</option>
-              <option value="cables">Cables & Chargers</option>
-              <option value="earphones">Earphones & Audio</option>
-              <option value="power_banks">Power Banks</option>
-              <option value="back_glass">Back Glass</option>
-              <option value="cameras">Cameras</option>
-              <option value="other">Other Components</option>
-            </Select>
-
-            <Input
-              label={editingProduct ? "In-Hand Stock Quantity (Units) *" : "Initial Quantity in Hand *"}
-              type="number"
-              min="0"
-              required
-              value={initialQty}
-              onChange={(e) => setInitialQty(e.target.value)}
-              helperText={editingProduct ? "Directly update current available stock count." : undefined}
-            />
-          </div>
-
-          {/* Stock threshold & Prices */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Low Stock Alert Threshold *"
-              type="number"
-              min="1"
-              required
-              value={lowStockThresh}
-              onChange={(e) => setLowStockThresh(e.target.value)}
-            />
-
-            <Input
-              label="Selling Price (₹) *"
-              type="number"
-              placeholder="e.g. 2400"
-              required
-              value={sellingRupees}
-              onChange={(e) => setSellingRupees(e.target.value)}
-            />
-
-            {isOwner && (
-              <Input
-                label="Wholesale Cost (₹) (Private)"
-                type="number"
-                placeholder="e.g. 1500"
-                value={costRupees}
-                onChange={(e) => setCostRupees(e.target.value)}
-              />
-            )}
-          </div>
-
-          <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setProductModalOpen(false);
-                resetProductForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" isLoading={savingProduct}>
-              {editingProduct ? 'Update Stock Item' : 'Save Inventory Product'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setProductModalOpen(false);
+                  resetProductForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" isLoading={savingProduct}>
+                {editingProduct ? 'Update Stock Item' : 'Save Inventory Product'}
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>
