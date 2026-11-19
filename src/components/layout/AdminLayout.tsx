@@ -427,9 +427,23 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Page Content Viewport with Smooth Independent Scrolling */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 overscroll-contain select-auto">
-          <div className="max-w-7xl mx-auto pb-12">
+        {/* Page Content Viewport - Non-scrollable fixed desktop app layout for POS, smooth scroll for other pages */}
+        <main
+          className={cn(
+            'flex-1 select-auto min-h-0',
+            location.pathname === '/admin/billing' || location.pathname === '/admin/counter-billing'
+              ? 'overflow-hidden p-2 sm:p-2.5 flex flex-col'
+              : 'overflow-y-auto p-4 sm:p-6 lg:p-8 overscroll-contain'
+          )}
+        >
+          <div
+            className={cn(
+              'mx-auto w-full',
+              location.pathname === '/admin/billing' || location.pathname === '/admin/counter-billing'
+                ? 'h-full flex flex-col min-h-0 max-w-none'
+                : 'max-w-7xl pb-12'
+            )}
+          >
             <Outlet />
           </div>
         </main>
