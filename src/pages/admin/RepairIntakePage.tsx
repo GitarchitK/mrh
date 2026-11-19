@@ -20,8 +20,9 @@ import {
   createOrUpdateCustomer,
   createRepairJob,
   getBusinessSettings,
+  getStaffUsers,
 } from '../../services/db';
-import { Customer, DeviceType, RepairPriority, RepairJob, BusinessSettings } from '../../types';
+import { Customer, DeviceType, RepairPriority, RepairJob, BusinessSettings, StaffUser } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useVoice } from '../../context/VoiceContext';
 import { SUPPORTED_VOICE_LANGUAGES } from '../../services/speechService';
@@ -76,6 +77,7 @@ export const RepairIntakePage: React.FC = () => {
   const [priority, setPriority] = useState<RepairPriority>('normal');
   const [assignedTechnician, setAssignedTechnician] = useState('Debasish');
   const [expectedCompletionAt, setExpectedCompletionAt] = useState('');
+  const [staffList, setStaffList] = useState<StaffUser[]>([]);
 
   // Completed Intake Result
   const [createdJob, setCreatedJob] = useState<RepairJob | null>(null);
@@ -86,9 +88,14 @@ export const RepairIntakePage: React.FC = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [cList, settings] = await Promise.all([getCustomers(), getBusinessSettings()]);
+      const [cList, settings, sList] = await Promise.all([getCustomers(), getBusinessSettings(), getStaffUsers()]);
       setAllCustomers(cList);
       setBusinessSettings(settings);
+      setStaffList(sList);
+
+      if (sList.length > 0 && !assignedTechnician) {
+        setAssignedTechnician(sList[0].displayName);
+      }
 
       if (paramCustId) {
         const found = cList.find((c) => c.id === paramCustId);
@@ -198,7 +205,9 @@ export const RepairIntakePage: React.FC = () => {
         accessoriesReceived: accessoriesReceived.trim() || 'Handset only (no extra accessories)',
         devicePasscodeOrPattern: devicePasscodeOrPattern.trim() || undefined,
         priority,
-        assignedTechnicianId: assignedTechnician === 'Debasish' ? 'owner_debasish' : 'tech_counter',
+        assignedTechnicianId:
+          staffList.find((s) => s.displayName === assignedTechnician)?.uid ||
+          (assignedTechnician === 'Debasish' ? 'owner_debasish' : 'tech_counter'),
         assignedTechnicianName: assignedTechnician,
         expectedCompletionAt: expectedCompletionAt || undefined,
         createdBy: currentUser?.uid || 'owner_debasish',
@@ -587,8 +596,20 @@ export const RepairIntakePage: React.FC = () => {
               value={assignedTechnician}
               onChange={(e) => setAssignedTechnician(e.target.value)}
             >
-              <option value="Debasish">Debasish (Owner / Senior Tech)</option>
-              <option value="Workshop Tech">Counter Workshop Bench</option>
+              {staffList.filter(s => s.active).length > 0 ? (
+                staffList
+                  .filter((s) => s.active)
+                  .map((s) => (
+                    <option key={s.uid} value={s.displayName}>
+                      {s.displayName} ({s.role})
+                    </option>
+                  ))
+              ) : (
+                <>
+                  <option value="Debasish">Debasish (Owner / Senior Tech)</option>
+                  <option value="Workshop Tech">Counter Workshop Bench</option>
+                </>
+              )}
             </Select>
 
             <Input

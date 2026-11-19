@@ -25,6 +25,10 @@ import {
   Bell,
   Sparkles,
   Mic,
+  KeyRound,
+  Shield,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -32,6 +36,8 @@ import { useVoice } from '../../context/VoiceContext';
 import { SUPPORTED_VOICE_LANGUAGES } from '../../services/speechService';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { Input } from '../ui/Input';
 
 interface NavSection {
   title: string;
@@ -48,13 +54,55 @@ interface NavSection {
 }
 
 export const AdminLayout: React.FC = () => {
-  const { currentUser, logout, isOwner, isManager } = useAuth();
+  const { currentUser, logout, isOwner, isManager, changePassword } = useAuth();
   const { settings } = useSettings();
   const { openAssistant, activeLanguage } = useVoice();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // My Account & Security Modal
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
+  const [savingPass, setSavingPass] = useState(false);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError('');
+    setPassSuccess('');
+
+    if (newPass.length < 4) {
+      setPassError('New password must be at least 4 characters long.');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      setPassError('New passwords do not match.');
+      return;
+    }
+
+    setSavingPass(true);
+    try {
+      const res = await changePassword(newPass, currentPass);
+      if (res.success) {
+        setPassSuccess('Password updated successfully!');
+        setCurrentPass('');
+        setNewPass('');
+        setConfirmPass('');
+        setTimeout(() => setPassSuccess(''), 4000);
+      } else {
+        setPassError(res.error || 'Failed to update password.');
+      }
+    } catch (err: any) {
+      setPassError(err.message || 'Error updating password.');
+    } finally {
+      setSavingPass(false);
+    }
+  };
 
   const currentVoiceLang =
     SUPPORTED_VOICE_LANGUAGES.find((l) => l.code === activeLanguage) || SUPPORTED_VOICE_LANGUAGES[0];
@@ -182,16 +230,22 @@ export const AdminLayout: React.FC = () => {
 
         {/* User Info Bar */}
         {!isCollapsed ? (
-          <div className="px-4 py-3 bg-brand-navy-dark/70 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setAccountModalOpen(true)}
+            title="My Staff Account & Security"
+            className="px-4 py-3 bg-brand-navy-dark/70 hover:bg-brand-navy-dark border-b border-white/5 flex items-center justify-between shrink-0 cursor-pointer transition-colors group"
+          >
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="relative shrink-0">
-                <div className="w-8 h-8 rounded-xl bg-brand-navy-light flex items-center justify-center text-xs font-bold text-brand-orange border border-brand-orange/40">
+                <div className="w-8 h-8 rounded-xl bg-brand-navy-light flex items-center justify-center text-xs font-bold text-brand-orange border border-brand-orange/40 group-hover:border-brand-orange">
                   {currentUser?.displayName?.[0] || 'D'}
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-brand-navy" />
               </div>
               <div className="truncate">
-                <div className="text-xs font-bold text-white truncate">
+                <div className="text-xs font-bold text-white group-hover:text-brand-orange-light transition-colors truncate">
                   {currentUser?.displayName || 'Debasish (Owner)'}
                 </div>
                 <div className="text-[10px] text-brand-orange-light capitalize font-medium flex items-center gap-1">
@@ -201,9 +255,16 @@ export const AdminLayout: React.FC = () => {
                 </div>
               </div>
             </div>
+            <KeyRound className="w-3.5 h-3.5 text-white/30 group-hover:text-white transition-colors shrink-0" />
           </div>
         ) : (
-          <div className="py-2.5 flex justify-center border-b border-white/5 shrink-0">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setAccountModalOpen(true)}
+            title="My Staff Account & Security"
+            className="py-2.5 flex justify-center border-b border-white/5 shrink-0 cursor-pointer hover:bg-white/5 transition-colors"
+          >
             <div className="relative">
               <div className="w-7 h-7 rounded-lg bg-brand-navy-light flex items-center justify-center text-[11px] font-bold text-brand-orange border border-brand-orange/40">
                 {currentUser?.displayName?.[0] || 'D'}
@@ -414,14 +475,25 @@ export const AdminLayout: React.FC = () => {
               </div>
 
               {/* User info in mobile */}
-              <div className="px-5 py-3 bg-brand-navy-dark border-b border-white/5 flex items-center gap-2.5 shrink-0">
-                <div className="w-7 h-7 rounded-lg bg-brand-navy-light flex items-center justify-center text-xs font-bold text-brand-orange border border-brand-orange/40">
-                  {currentUser?.displayName?.[0] || 'D'}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  setAccountModalOpen(true);
+                }}
+                className="px-5 py-3 bg-brand-navy-dark border-b border-white/5 flex items-center justify-between shrink-0 cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <div className="w-7 h-7 rounded-lg bg-brand-navy-light flex items-center justify-center text-xs font-bold text-brand-orange border border-brand-orange/40 shrink-0">
+                    {currentUser?.displayName?.[0] || 'D'}
+                  </div>
+                  <div className="truncate">
+                    <div className="text-xs font-bold text-white truncate">{currentUser?.displayName || 'Debasish'}</div>
+                    <div className="text-[10px] text-brand-orange-light capitalize font-medium">{currentUser?.role || 'Owner'}</div>
+                  </div>
                 </div>
-                <div className="truncate">
-                  <div className="text-xs font-bold text-white truncate">{currentUser?.displayName || 'Debasish'}</div>
-                  <div className="text-[10px] text-brand-orange-light capitalize font-medium">{currentUser?.role || 'Owner'}</div>
-                </div>
+                <KeyRound className="w-3.5 h-3.5 text-white/40 shrink-0" />
               </div>
 
               {/* Scrollable Nav List */}
@@ -497,6 +569,115 @@ export const AdminLayout: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Staff Account & Change Password Modal */}
+      <Modal
+        isOpen={accountModalOpen}
+        onClose={() => {
+          setAccountModalOpen(false);
+          setPassError('');
+          setPassSuccess('');
+          setCurrentPass('');
+          setNewPass('');
+          setConfirmPass('');
+        }}
+        title="My Staff Account & Security"
+        description="View your workshop staff credentials and update your account password."
+      >
+        <div className="space-y-5 text-xs">
+          {/* Profile Overview */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm text-brand-navy">
+                {currentUser?.displayName}
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  currentUser?.role === 'owner'
+                    ? 'bg-brand-orange-light text-brand-orange border border-brand-orange/30'
+                    : currentUser?.role === 'manager'
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                }`}
+              >
+                {currentUser?.role || 'Staff'}
+              </span>
+            </div>
+            <div className="text-slate-600 space-y-1">
+              <div>Email: <strong className="text-brand-navy">{currentUser?.email}</strong></div>
+              {currentUser?.phone && <div>Phone: <strong className="text-brand-navy">{currentUser?.phone}</strong></div>}
+              <div>Workshop: <strong className="text-brand-navy">Dunlop, Kolkata</strong></div>
+            </div>
+          </div>
+
+          {/* Change Password Form */}
+          <form onSubmit={handlePasswordSubmit} className="space-y-3.5 border-t border-slate-100 pt-4">
+            <h3 className="font-bold text-brand-navy uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5 text-brand-orange" />
+              <span>Change Account Password</span>
+            </h3>
+
+            {passSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>{passSuccess}</span>
+              </div>
+            )}
+
+            {passError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{passError}</span>
+              </div>
+            )}
+
+            <Input
+              label="Current Password"
+              type="password"
+              placeholder="Enter current password (if set)"
+              value={currentPass}
+              onChange={(e) => setCurrentPass(e.target.value)}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="New Password *"
+                type="password"
+                required
+                placeholder="At least 4 characters"
+                value={newPass}
+                onChange={(e) => setNewPass(e.target.value)}
+              />
+
+              <Input
+                label="Confirm New Password *"
+                type="password"
+                required
+                placeholder="Re-type new password"
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAccountModalOpen(false)}
+              >
+                Close
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={savingPass}
+              >
+                Update Password
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 };

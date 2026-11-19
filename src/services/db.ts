@@ -688,7 +688,8 @@ export async function getInventoryProducts(): Promise<InventoryProduct[]> {
 export async function saveInventoryProduct(product: InventoryProduct): Promise<void> {
   const list = await getInventoryProducts();
   const idx = list.findIndex(p => p.id === product.id);
-  if (idx >= 0) {
+  const isExisting = idx >= 0;
+  if (isExisting) {
     list[idx] = product;
   } else {
     list.unshift(product);
@@ -696,12 +697,57 @@ export async function saveInventoryProduct(product: InventoryProduct): Promise<v
   writeLocal(KEYS.INVENTORY, list);
 
   try {
-    await apiRequest('/inventory', {
-      method: 'POST',
-      body: JSON.stringify(product),
-    });
+    if (isExisting) {
+      await apiRequest(`/inventory/${product.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(product),
+      });
+    } else {
+      await apiRequest('/inventory', {
+        method: 'POST',
+        body: JSON.stringify(product),
+      });
+    }
   } catch (err) {
     console.warn('Error saving inventory product via API:', err);
+  }
+}
+
+export async function updateInventoryProduct(
+  id: string,
+  updates: Partial<InventoryProduct>
+): Promise<InventoryProduct | null> {
+  const list = await getInventoryProducts();
+  const idx = list.findIndex(p => p.id === id);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...updates, updatedAt: new Date().toISOString() };
+    writeLocal(KEYS.INVENTORY, list);
+  }
+
+  try {
+    const res = await apiRequest<InventoryProduct>(`/inventory/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return res;
+  } catch (err) {
+    console.warn('Error updating inventory product via API:', err);
+    return null;
+  }
+}
+
+export async function deleteInventoryProduct(id: string): Promise<void> {
+  const list = await getInventoryProducts();
+  const filtered = list.filter(p => p.id !== id);
+  writeLocal(KEYS.INVENTORY, filtered);
+
+  try {
+    await apiRequest(`/inventory/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    console.warn('Error deleting inventory product via API:', err);
+    throw err;
   }
 }
 
@@ -921,6 +967,25 @@ export async function updateStaffUser(
 export async function deleteStaffUser(uid: string): Promise<void> {
   await apiRequest(`/staff/${uid}`, {
     method: 'DELETE',
+  });
+}
+
+export async function changeUserPassword(data: {
+  currentPassword?: string;
+  newPassword: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  return await apiRequest<{ success: boolean; message?: string; error?: string }>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resetStaffPassword(
+  email: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  return await apiRequest<{ success: boolean; message?: string; error?: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
   });
 }
 

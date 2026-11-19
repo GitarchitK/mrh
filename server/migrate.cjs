@@ -344,6 +344,13 @@ async function migrate() {
           password_hash = EXCLUDED.password_hash;
     `, [ownerHash]);
 
+    // Seed Staff Technician if not exists
+    await client.query(`
+      INSERT INTO mrh_users (uid, email, display_name, role, phone, active, password_hash)
+      VALUES ('staff_tech_subir', 'subir@mobilerepairinghouse.com', 'Subir Karmakar (Technician)', 'technician', '+91 98300 12345', TRUE, $1)
+      ON CONFLICT (uid) DO NOTHING;
+    `, [ownerHash]);
+
     await client.query('COMMIT');
     console.log('Migration completed successfully!');
   } catch (err) {

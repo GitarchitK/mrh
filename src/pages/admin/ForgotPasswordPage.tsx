@@ -54,9 +54,9 @@ export const ForgotPasswordPage: React.FC = () => {
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-brand-navy">Instructions Sent</h3>
+              <h3 className="text-base font-bold text-brand-navy">Password Reset Complete</h3>
               <p className="text-xs text-brand-secondary leading-relaxed">
-                If an authorized staff account exists for <strong className="text-brand-navy">{email}</strong>, a password reset link has been dispatched.
+                Authorized staff account found for <strong className="text-brand-navy">{email}</strong>. Your password has been reset to the default workshop password: <strong className="text-brand-navy font-mono">Debasish@2026</strong>. You can now sign in and change it in your profile.
               </p>
               <div className="pt-2">
                 <Link to="/admin/login">

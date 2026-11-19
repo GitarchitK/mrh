@@ -323,6 +323,70 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email address is required.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const userRes = await pool.query('SELECT uid, display_name FROM mrh_users WHERE LOWER(email) = $1 AND active = TRUE LIMIT 1;', [cleanEmail]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'No active staff account found with this email address.' });
+    }
+    const defaultPassword = process.env.ADMIN_PASSWORD || 'Debasish@2026';
+    const passwordHash = crypto.createHash('sha256').update(defaultPassword).digest('hex');
+    await pool.query('UPDATE mrh_users SET password_hash = $1 WHERE uid = $2;', [passwordHash, userRes.rows[0].uid]);
+    res.json({
+      success: true,
+      message: `Password reset to default credentials (${defaultPassword}) for ${userRes.rows[0].display_name}.`,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer session_')) {
+      return res.status(401).json({ success: false, error: 'Unauthorized. Please sign in.' });
+    }
+
+    const rawToken = authHeader.replace('Bearer session_', '');
+    const lastUnderscore = rawToken.lastIndexOf('_');
+    const uid = lastUnderscore > 0 ? rawToken.substring(0, lastUnderscore) : rawToken;
+
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.trim().length < 4) {
+      return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long.' });
+    }
+
+    const userRes = await pool.query('SELECT * FROM mrh_users WHERE uid = $1 AND active = TRUE LIMIT 1;', [uid]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Staff account not found or inactive.' });
+    }
+
+    const user = userRes.rows[0];
+    const configuredPassword = process.env.ADMIN_PASSWORD || 'Debasish@2026';
+
+    if (currentPassword) {
+      const inputHash = crypto.createHash('sha256').update(currentPassword).digest('hex');
+      const matches = (user.password_hash === inputHash) || (user.password_hash === currentPassword) || (currentPassword === configuredPassword);
+      if (!matches) {
+        return res.status(400).json({ success: false, error: 'Current password does not match.' });
+      }
+    }
+
+    const newHash = crypto.createHash('sha256').update(newPassword.trim()).digest('hex');
+    await pool.query('UPDATE mrh_users SET password_hash = $1 WHERE uid = $2;', [newHash, uid]);
+
+    res.json({ success: true, message: 'Password updated successfully!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/auth/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer session_')) {
@@ -384,7 +448,7 @@ app.get('/api/staff', async (req, res) => {
 
 app.post('/api/staff', async (req, res) => {
   try {
-    const { email, displayName, role = 'technician', phone, password = 'Debasish@2026' } = req.body;
+    const { email, displayName, role = 'technician', phone, password } = req.body;
     if (!email || !displayName) {
       return res.status(400).json({ error: 'Email and full name are required.' });
     }
@@ -396,7 +460,8 @@ app.post('/api/staff', async (req, res) => {
     }
 
     const uid = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+    const effectivePassword = (password && String(password).trim().length > 0) ? String(password).trim() : 'Debasish@2026';
+    const passwordHash = crypto.createHash('sha256').update(effectivePassword).digest('hex');
 
     const result = await pool.query(`
       INSERT INTO mrh_users (
@@ -422,34 +487,49 @@ app.post('/api/staff', async (req, res) => {
 
 app.put('/api/staff/:uid', async (req, res) => {
   try {
-    const { role, displayName, phone, active, password } = req.body;
+    const { role, displayName, email, phone, active, password } = req.body;
     const uid = req.params.uid;
 
-    if (uid === 'owner_debasish' && active === false) {
-      return res.status(400).json({ error: 'Cannot deactivate primary owner account.' });
+    if (uid === 'owner_debasish') {
+      if (active === false) {
+        return res.status(400).json({ error: 'Cannot deactivate primary owner account.' });
+      }
+      if (role && role !== 'owner') {
+        return res.status(400).json({ error: 'Primary owner role cannot be downgraded.' });
+      }
     }
 
     const updates = [];
     const params = [uid];
 
+    if (email !== undefined && email.trim()) {
+      const cleanEmail = email.trim().toLowerCase();
+      // Check for conflict
+      const conflict = await pool.query('SELECT uid FROM mrh_users WHERE LOWER(email) = $1 AND uid != $2;', [cleanEmail, uid]);
+      if (conflict.rows.length > 0) {
+        return res.status(400).json({ error: 'Another staff member already uses this email.' });
+      }
+      params.push(cleanEmail);
+      updates.push(`email = $${params.length}`);
+    }
     if (role !== undefined) {
       params.push(role);
       updates.push(`role = $${params.length}`);
     }
-    if (displayName !== undefined) {
-      params.push(displayName);
+    if (displayName !== undefined && displayName.trim()) {
+      params.push(displayName.trim());
       updates.push(`display_name = $${params.length}`);
     }
     if (phone !== undefined) {
-      params.push(phone);
+      params.push(phone ? phone.trim() : null);
       updates.push(`phone = $${params.length}`);
     }
     if (active !== undefined) {
       params.push(Boolean(active));
       updates.push(`active = $${params.length}`);
     }
-    if (password) {
-      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+    if (password && String(password).trim().length > 0) {
+      const passwordHash = crypto.createHash('sha256').update(String(password).trim()).digest('hex');
       params.push(passwordHash);
       updates.push(`password_hash = $${params.length}`);
     }
@@ -1247,11 +1327,26 @@ app.post('/api/inventory', async (req, res) => {
         low_stock_threshold, purchase_cost_paise, selling_price_paise, active,
         created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        sku = EXCLUDED.sku,
+        category = EXCLUDED.category,
+        brand = EXCLUDED.brand,
+        serial_number = EXCLUDED.serial_number,
+        description = EXCLUDED.description,
+        quantity_available = EXCLUDED.quantity_available,
+        low_stock_threshold = EXCLUDED.low_stock_threshold,
+        purchase_cost_paise = EXCLUDED.purchase_cost_paise,
+        selling_price_paise = EXCLUDED.selling_price_paise,
+        active = EXCLUDED.active,
+        updated_at = NOW()
       RETURNING *;
     `, [
       id, i.name, i.sku, i.category, i.brand || null, i.serialNumber || null, i.description || null,
-      i.quantityAvailable || 0, i.lowStockThreshold || 5,
-      i.purchaseCostPaise || 0, i.sellingPricePaise || 0
+      i.quantityAvailable !== undefined ? Number(i.quantityAvailable) : 0,
+      i.lowStockThreshold !== undefined ? Number(i.lowStockThreshold) : 5,
+      i.purchaseCostPaise !== undefined ? Number(i.purchaseCostPaise) : 0,
+      i.sellingPricePaise !== undefined ? Number(i.sellingPricePaise) : 0
     ]);
     res.status(201).json(mapInventory(result.rows[0]));
   } catch (err) {
@@ -1262,26 +1357,55 @@ app.post('/api/inventory', async (req, res) => {
 app.put('/api/inventory/:id', async (req, res) => {
   try {
     const i = req.body;
+    const { id } = req.params;
     const result = await pool.query(`
       UPDATE mrh_inventory SET
         name = COALESCE($2, name),
-        category = COALESCE($3, category),
-        brand = COALESCE($4, brand),
-        serial_number = COALESCE($5, serial_number),
-        description = COALESCE($6, description),
-        quantity_available = COALESCE($7, quantity_available),
-        low_stock_threshold = COALESCE($8, low_stock_threshold),
-        purchase_cost_paise = COALESCE($9, purchase_cost_paise),
-        selling_price_paise = COALESCE($10, selling_price_paise),
-        active = COALESCE($11, active),
+        sku = COALESCE($3, sku),
+        category = COALESCE($4, category),
+        brand = COALESCE($5, brand),
+        serial_number = COALESCE($6, serial_number),
+        description = COALESCE($7, description),
+        quantity_available = COALESCE($8, quantity_available),
+        low_stock_threshold = COALESCE($9, low_stock_threshold),
+        purchase_cost_paise = COALESCE($10, purchase_cost_paise),
+        selling_price_paise = COALESCE($11, selling_price_paise),
+        active = COALESCE($12, active),
         updated_at = NOW()
       WHERE id = $1 RETURNING *;
     `, [
-      req.params.id, i.name, i.category, i.brand, i.serialNumber, i.description,
-      i.quantityAvailable, i.lowStockThreshold, i.purchaseCostPaise,
-      i.sellingPricePaise, i.active
+      id,
+      i.name !== undefined ? i.name : null,
+      i.sku !== undefined ? i.sku : null,
+      i.category !== undefined ? i.category : null,
+      i.brand !== undefined ? i.brand : null,
+      i.serialNumber !== undefined ? i.serialNumber : null,
+      i.description !== undefined ? i.description : null,
+      i.quantityAvailable !== undefined ? Number(i.quantityAvailable) : null,
+      i.lowStockThreshold !== undefined ? Number(i.lowStockThreshold) : null,
+      i.purchaseCostPaise !== undefined ? Number(i.purchaseCostPaise) : null,
+      i.sellingPricePaise !== undefined ? Number(i.sellingPricePaise) : null,
+      i.active !== undefined ? Boolean(i.active) : null
     ]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory product not found.' });
+    }
     res.json(mapInventory(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/inventory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Remove related movement records first
+    await pool.query('DELETE FROM mrh_inventory_movements WHERE product_id = $1;', [id]).catch(() => {});
+    const result = await pool.query('DELETE FROM mrh_inventory WHERE id = $1 RETURNING id;', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory product not found.' });
+    }
+    res.json({ success: true, deletedId: id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

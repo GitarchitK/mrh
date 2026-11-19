@@ -13,10 +13,15 @@ import {
   Tag,
   Barcode,
   Hash,
+  Edit2,
+  Trash2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getInventoryProducts,
   saveInventoryProduct,
+  updateInventoryProduct,
+  deleteInventoryProduct,
   adjustInventoryStock,
   getInventoryMovements,
 } from '../../services/db';
@@ -78,7 +83,13 @@ export const InventoryPage: React.FC = () => {
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<InventoryProduct | null>(null);
 
-  // New Product Form
+  // Edit & Delete State (Owner Controls)
+  const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<InventoryProduct | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
+  const [successToast, setSuccessToast] = useState('');
+
+  // New / Edit Product Form
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [category, setCategory] = useState<any>('displays');
@@ -98,6 +109,7 @@ export const InventoryPage: React.FC = () => {
   const [adjusting, setAdjusting] = useState(false);
 
   const resetProductForm = () => {
+    setEditingProduct(null);
     setName('');
     setSku('');
     setCategory('displays');
@@ -108,6 +120,34 @@ export const InventoryPage: React.FC = () => {
     setLowStockThresh('2');
     setCostRupees('');
     setSellingRupees('');
+  };
+
+  const openEditModal = (prod: InventoryProduct) => {
+    setEditingProduct(prod);
+    setName(prod.name);
+    setSku(prod.sku);
+    setCategory(prod.category);
+
+    const found = BRAND_OPTIONS.find(
+      (b) => b.value.toLowerCase() === (prod.brand || '').toLowerCase()
+    );
+    if (found && found.value !== 'custom') {
+      setBrandSelection(found.value);
+      setCustomBrand('');
+    } else if (prod.brand) {
+      setBrandSelection('custom');
+      setCustomBrand(prod.brand);
+    } else {
+      setBrandSelection('Universal');
+      setCustomBrand('');
+    }
+
+    setSerialNumber(prod.serialNumber || '');
+    setInitialQty(String(prod.quantityAvailable));
+    setLowStockThresh(String(prod.lowStockThreshold));
+    setCostRupees(prod.purchaseCostPaise ? String(Math.round(prod.purchaseCostPaise / 100)) : '');
+    setSellingRupees(prod.sellingPricePaise ? String(Math.round(prod.sellingPricePaise / 100)) : '');
+    setProductModalOpen(true);
   };
 
   const loadData = async () => {
@@ -160,34 +200,88 @@ export const InventoryPage: React.FC = () => {
       ? customBrand.trim()
       : (brandSelection === 'Universal' ? 'Universal' : brandSelection.trim());
 
+    const newQty = Math.max(0, parseInt(initialQty) || 0);
+
     setSavingProduct(true);
     try {
       const now = new Date().toISOString();
-      const newProd: InventoryProduct = {
-        id: `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: name.trim(),
-        sku: sku.trim().toUpperCase(),
-        category,
-        brand: resolvedBrand || undefined,
-        serialNumber: serialNumber.trim().toUpperCase() || undefined,
-        quantityAvailable: Math.max(0, parseInt(initialQty) || 0),
-        lowStockThreshold: Math.max(0, parseInt(lowStockThresh) || 2),
-        purchaseCostPaise: rupeesToPaise(costRupees || 0),
-        sellingPricePaise: rupeesToPaise(sellingRupees || 0),
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-      };
 
-      await saveInventoryProduct(newProd);
+      if (editingProduct) {
+        const oldQty = editingProduct.quantityAvailable;
+        await updateInventoryProduct(editingProduct.id, {
+          name: name.trim(),
+          sku: sku.trim().toUpperCase(),
+          category,
+          brand: resolvedBrand || undefined,
+          serialNumber: serialNumber.trim().toUpperCase() || undefined,
+          quantityAvailable: newQty,
+          lowStockThreshold: Math.max(0, parseInt(lowStockThresh) || 2),
+          purchaseCostPaise: rupeesToPaise(costRupees || 0),
+          sellingPricePaise: rupeesToPaise(sellingRupees || 0),
+          active: true,
+        });
+
+        // If stock count was modified directly in the edit form, record audit movement
+        if (newQty !== oldQty) {
+          const delta = newQty - oldQty;
+          await adjustInventoryStock({
+            productId: editingProduct.id,
+            delta,
+            type: 'adjustment',
+            reason: `Direct stock audit count updated from ${oldQty} to ${newQty} units`,
+            performedBy: currentUser?.displayName || 'Debasish (Owner)',
+          });
+        }
+
+        setSuccessToast(`Stock item "${name.trim()}" updated successfully!`);
+        setTimeout(() => setSuccessToast(''), 4000);
+      } else {
+        const newProd: InventoryProduct = {
+          id: `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          name: name.trim(),
+          sku: sku.trim().toUpperCase(),
+          category,
+          brand: resolvedBrand || undefined,
+          serialNumber: serialNumber.trim().toUpperCase() || undefined,
+          quantityAvailable: newQty,
+          lowStockThreshold: Math.max(0, parseInt(lowStockThresh) || 2),
+          purchaseCostPaise: rupeesToPaise(costRupees || 0),
+          sellingPricePaise: rupeesToPaise(sellingRupees || 0),
+          active: true,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        await saveInventoryProduct(newProd);
+        setSuccessToast(`"${name.trim()}" registered to inventory!`);
+        setTimeout(() => setSuccessToast(''), 4000);
+      }
+
       setProductModalOpen(false);
       resetProductForm();
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save product:', err);
-      alert('Failed to save product.');
+      alert(err?.message || 'Failed to save product.');
     } finally {
       setSavingProduct(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deleteConfirmProduct) return;
+    setDeletingProduct(true);
+    try {
+      await deleteInventoryProduct(deleteConfirmProduct.id);
+      setSuccessToast(`Deleted "${deleteConfirmProduct.name}" from inventory.`);
+      setTimeout(() => setSuccessToast(''), 4000);
+      setDeleteConfirmProduct(null);
+      await loadData();
+    } catch (err: any) {
+      console.error('Failed to delete product:', err);
+      alert(err?.message || 'Failed to delete product.');
+    } finally {
+      setDeletingProduct(false);
     }
   };
 
@@ -272,6 +366,13 @@ export const InventoryPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {successToast && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800 shadow-xs animate-in fade-in duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="font-bold">{successToast}</span>
+        </div>
+      )}
 
       {/* Filter and Search */}
       <div className="bg-white p-4 rounded-2xl border border-brand-border shadow-xs flex flex-col sm:flex-row gap-3">
@@ -368,13 +469,18 @@ export const InventoryPage: React.FC = () => {
                         <>
                           <span>&bull;</span>
                           <span className="italic">Wholesale: {formatPaiseToINR(prod.purchaseCostPaise)}</span>
+                          {prod.purchaseCostPaise > 0 && prod.sellingPricePaise > prod.purchaseCostPaise && (
+                            <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                              +₹{Math.round((prod.sellingPricePaise - prod.purchaseCostPaise) / 100)} margin
+                            </span>
+                          )}
                         </>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="text-right pr-1">
                       <span className="text-brand-secondary text-[10px] uppercase font-bold block">
                         In Stock:
                       </span>
@@ -396,9 +502,36 @@ export const InventoryPage: React.FC = () => {
                         setSelectedProduct(prod);
                         setAdjustModalOpen(true);
                       }}
+                      title="Adjust stock in/out movement"
                     >
-                      Adjust Stock
+                      Adjust
                     </Button>
+
+                    {isOwner && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="text-xs font-semibold bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200"
+                        leftIcon={<Edit2 className="w-3.5 h-3.5 text-blue-600" />}
+                        onClick={() => openEditModal(prod)}
+                        title="Edit product details, prices, SKU and stock count"
+                      >
+                        Edit
+                      </Button>
+                    )}
+
+                    {isOwner && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs text-rose-600 hover:bg-rose-50 border-rose-200"
+                        leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                        onClick={() => setDeleteConfirmProduct(prod)}
+                        title="Delete product from inventory"
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -407,15 +540,19 @@ export const InventoryPage: React.FC = () => {
         )}
       </div>
 
-      {/* Add Product Modal */}
+      {/* Add / Edit Product Modal */}
       <Modal
         isOpen={productModalOpen}
         onClose={() => {
           setProductModalOpen(false);
           resetProductForm();
         }}
-        title="Add Inventory Product or Spare Part"
-        description="Register a new component for repair jobs or retail sale with brand & serial tracking."
+        title={editingProduct ? `Edit Product: ${editingProduct.name}` : 'Add Inventory Product or Spare Part'}
+        description={
+          editingProduct
+            ? 'Update part details, SKU, retail / wholesale pricing, and direct in-hand stock quantity.'
+            : 'Register a new component for repair jobs or retail sale with brand & serial tracking.'
+        }
       >
         <div className="mb-4 p-3 bg-brand-light rounded-xl border border-brand-border flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
@@ -525,7 +662,7 @@ export const InventoryPage: React.FC = () => {
             />
           </div>
 
-          {/* Category & Initial Qty */}
+          {/* Category & Quantity in Hand */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Category *"
@@ -544,12 +681,13 @@ export const InventoryPage: React.FC = () => {
             </Select>
 
             <Input
-              label="Initial Quantity in Hand *"
+              label={editingProduct ? "In-Hand Stock Quantity (Units) *" : "Initial Quantity in Hand *"}
               type="number"
               min="0"
               required
               value={initialQty}
               onChange={(e) => setInitialQty(e.target.value)}
+              helperText={editingProduct ? "Directly update current available stock count." : undefined}
             />
           </div>
 
@@ -596,11 +734,56 @@ export const InventoryPage: React.FC = () => {
               Cancel
             </Button>
             <Button type="submit" variant="primary" isLoading={savingProduct}>
-              Save Inventory Product
+              {editingProduct ? 'Update Stock Item' : 'Save Inventory Product'}
             </Button>
           </div>
         </form>
       </Modal>
+
+      {/* Delete Product Confirmation Modal (Owner Only) */}
+      {deleteConfirmProduct && (
+        <Modal
+          isOpen={!!deleteConfirmProduct}
+          onClose={() => setDeleteConfirmProduct(null)}
+          title="Delete Stock Product"
+          description="Confirm permanent removal of this spare part from the shop inventory."
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-rose-900 text-sm">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Permanently delete "{deleteConfirmProduct.name}"?</span>
+              </div>
+              <p>
+                SKU: <strong className="font-mono text-brand-navy">{deleteConfirmProduct.sku}</strong> &bull; Current stock: <strong className="text-brand-navy">{deleteConfirmProduct.quantityAvailable} units</strong>.
+              </p>
+              <p className="text-rose-700">
+                This item will be deleted from the database. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDeleteConfirmProduct(null)}
+                disabled={deletingProduct}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+                isLoading={deletingProduct}
+                onClick={handleDeleteProduct}
+              >
+                Yes, Delete Stock Item
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Adjust Stock Modal */}
       {selectedProduct && (
